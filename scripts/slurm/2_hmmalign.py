@@ -25,8 +25,9 @@ for idx,chunk in enumerate(todo_spl):
         sg.add_command(f"hmmalign --trim --amino -o {line.replace('.fasta','.aa.msa')} {os.path.join(MARKERS_PATH, line.replace('.fasta','.hmm'))} {line}")
         sg.add_command(f"esl-reformat --replace=x:- --gapsym=- -o {line.replace('.fasta','.esltmp')} afa {line.replace('.fasta','.aa.msa')}")
         sg.add_command("perl -p -e 'if (! /^>/) {{ s/[ZBzbXx\*]/-/g }}' {} > {}".format(line.replace('.fasta','.esltmp'), line.replace('.fasta','.clnaln')))
-        sg.add_command(f"rm {line.replace('.fasta','.esltmp')}")
+        #sg.add_command(f"rm {line.replace('.fasta','.esltmp')}")
+        #sg.add_command(f"trimal -automated1 -in {line.replace('.fasta','.clnaln')} -out {line.replace('.fasta','.aa.filter')}")
         sg.add_command(f"trimal -resoverlap 0.50 -seqoverlap 60 -in {line.replace('.fasta','.clnaln')} -out {line.replace('.fasta','.aa.filter')}")
-        sg.add_command(f"trimal -fasta -in {line.replace('.fasta','.aa.filter')} -out {line.replace('.fasta','.aa.trim')}")
+        sg.add_command(f"trimal -automated1 -fasta -in {line.replace('.fasta','.aa.filter')} -out {line.replace('.fasta','.aa.trim')}")
 
     sg.write()
