@@ -24,10 +24,10 @@ export CHYTRID_PHYLO=/path/to/Chytrid-Phylogenomics/scripts/python
 ### Before you start...
 
 1. **You need genomes** (specifically predicted proteomes) for the taxa that you want to include in phylogenomic trees. You can get these by sequencing them yourself, from public databases like the [JGI Genome Portal](https://genome.jgi.doe.gov/portal/) or [NCBI Genbank](https://www.ncbi.nlm.nih.gov/genbank/), or most commonly some combination of both. The sequence headers in the FASTAs you get from different places are going to be formatted differently. The first step after downloading all of your predicted proteomes needs to be getting all of those names into the standard NCBI format:
-```
-LocusTagPrefix|ProteinHeader OptionalDescription
-```
-There are a variety of ways to do this, but it depends a lot on what the headers in each file are. I don't have any batch scripts for doing this yet, but feel free to ask for help. Some useful command line tools for doing this include `sed` and `awk`.
+     ```
+     LocusTagPrefix|ProteinHeader OptionalDescription
+     ```
+     There are a variety of ways to do this, but it depends a lot on what the headers in each file are. I don't have any batch scripts for doing this yet, but feel free to ask for help. Some useful command line tools for doing this include `sed` and `awk`.
 
 2. **You need phylogenomic markers** that you want to pull out of the predicted proteomes for taxa you want to include in phylogenomic trees. For this particular project we opted to use the markers used by [BUSCO](https://busco.ezlab.org/) and contained in the `fungi_odb10` database. There are other varieties of BUSCO markers that are tuned for different groups of organisms.
      - You can find fungi_odb10 [HERE](https://busco-data.ezlab.org/v4/data/lineages/fungi_odb10.2019-12-13.tar.gz)
