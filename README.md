@@ -19,7 +19,7 @@ export CHYTRID_PHYLO=/path/to/Chytrid-Phylogenomics/scripts/python
      
      Start to follow the installation instructions at the [SCGid github repository](https://www.github.com/amsesk/SCGid.git) to install SCGid, but you can stop after you enter:
      
-     `python setup.py develop`.**
+     `python setup.py develop`
 
 ### Before you start...
 
