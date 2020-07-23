@@ -11,8 +11,7 @@ git clone https://github.com/Michigan-Mycology/Chytrid-Phylogenomics.git
 
 2. **Set an environmental variable that points to where you have this repository downloaded.** Do this by adding the following line to the the file at `/home/uniqname/.bashrc` or just typing it into your current session. Adding it to `/home/uniqname/.bashrc` will make this permanent.
 
-```
-export 
+``` 
 export CHYTRID_PHYLO=/path/to/Chytrid-Phylogenomics/scripts/python
 ```
 
