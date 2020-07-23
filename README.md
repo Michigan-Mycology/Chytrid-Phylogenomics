@@ -17,7 +17,7 @@ export CHYTRID_PHYLO=/path/to/Chytrid-Phylogenomics/scripts/python
 
 3. **Install SCGid** Some of the python scripts included in this repositiory require a FASTA-reading module that is part of SCGid. If you are going to use them, you need to have SCGid installed on your system and be using it in a virtual python3 environment. Doing this will also bring along some other dependencies that are used by these and other scripts. 
      
-     Follow the installation instructions at the [SCGid github repository](https://www.github.com/amsesk/SCGid.git) to install SCGid.
+     Follow the installation instructions at the [SCGid github repository](https://www.github.com/amsesk/SCGid.git) to install SCGid. **But you can stop after you enter `python setup.py develop`.**
 
 ### Before you start...
 
