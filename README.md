@@ -28,6 +28,8 @@ export CHYTRID_PHYLO=/path/to/Chytrid-Phylogenomics/scripts/python
      LocusTagPrefix|ProteinHeader OptionalDescription
      ```
      There are a variety of ways to do this, but it depends a lot on what the headers in each file are. I don't have any batch scripts for doing this yet, but feel free to ask for help. Some useful command line tools for doing this include `sed` and `awk`.
+     
+     Put the final predicted proteome FASTA files at `$CHYTRID_PHYLO/data`. You will have to make this directory first, `mkdir $CHYTRID_PHYLO/data`.
 
 2. **You need phylogenomic markers** that you want to pull out of the predicted proteomes for taxa you want to include in phylogenomic trees. For this particular project we opted to use the markers used by [BUSCO](https://busco.ezlab.org/) and contained in the `fungi_odb10` database. There are other varieties of BUSCO markers that are tuned for different groups of organisms.
      - You can find fungi_odb10 [HERE](https://busco-data.ezlab.org/v4/data/lineages/fungi_odb10.2019-12-13.tar.gz)
@@ -48,13 +50,52 @@ export CHYTRID_PHYLO=/path/to/Chytrid-Phylogenomics/scripts/python
      ```
      # Make a direcotry for the markers
      mkdir $CHYTRID_PHYLO/markers
+     mkdir $CHYTRID_PHYLO/markers/hmm
 
      # Copy the markers over
      # `*.hmm` means all files whose names end with ".hmm"
-     cp fungi_odb10/hmms/*.hmm $CHYTRID_PHYLO/markers/.
+     cp fungi_odb10/hmms/*.hmm $CHYTRID_PHYLO/markers/hmm/.
 
      # Copy the cutoff scores that BUSCO uses for each marker - we'll use this later
      cp fungi_odb10/scores_cutoff $CHYTRID_PHYLO/odb10_busco_scores_cutoff
      ```
 
 ### Pipeline
+
+Make sure you have markers and genomes downloaded and FASTA headers reformatted as discussed above before continuing.
+
+1. Combine all the hmm markers into a single file and format as a database.
+
+     Install/load hmmer. If you are on greatlakes, hmmer is already installed, but you need to load it:
+     ```
+     module load Bioinformatics hmmer
+     ```
+     Combine files and build database like this:
+     ```
+     cd $CHYTRID_PHYLO/markers/
+     cat hmm/*.hmm > odb10_combined.hmm
+     hmmpress odb10_combined.hmm
+     ```
+     Now you should have `.h3p`, `.h3m`, `.h3f`, and `h3i` files in addition to `odb10_combined.hmm`.
+     
+2. Search predicted proteomes with marker hmm models to get hits in domtbl format.
+     
+     The essential command that needs to be called for each proteome is:
+     ```
+     hmmsearch --cpu 1 -E 1e-5 --domtblout predicted_proteome.domtbl  /path/to/odb10_combined.hmm /path/to/predicted_proteome.fasta
+     ```
+     
+     **If you are working on greatlakes through the James Lab** there is a python helper script you can use to autogenerate slurm scripts to run this command for all your FASTA files as long as they're stored together in a single directory.
+     ```
+     python $CHYTRID_PHYLO/scripts/slurm/1_hmmsearch.py /path/to/FASTA/directory /path/to/odb10_combined.hmm
+     ```
+     
+     Now you should have 10 HmSe_X.sh files which can each be submitted to slurm, the results of which should be collected in a separate directory:
+     ```
+     mkdir $CHYTRID_PHYLO/search
+     cd $CHYTRID_PHYLO/search
+     for i in $(ls /path/to/slurm/scripts/HmSe_*.sh); sbatch $i
+     ```
+     
+
+     
