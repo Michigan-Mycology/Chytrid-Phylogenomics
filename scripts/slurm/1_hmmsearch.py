@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/home/amsesk/scripts/")
+sys.path.append(os.path.join(os.environ.get('CHYTRID_PHYLO'), "scripts", "slurm"))
 import scriptgen
 import numpy as np
 import os
