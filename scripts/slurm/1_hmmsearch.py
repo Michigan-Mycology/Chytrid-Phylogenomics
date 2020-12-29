@@ -1,5 +1,5 @@
 import sys
-sys.path.append("/home/amsesk/scripts/")
+sys.path.append(os.path.join(os.environ.get('CHYTRID_PHYLO'), "scripts", "slurm"))
 import scriptgen
 import numpy as np
 import os
@@ -8,7 +8,7 @@ NJOBS=10
 PEP_PATH = sys.argv[1]
 MARKERS_PATH = sys.argv[2]
 
-todo = [x for x in os.listdir(PEP_PATH) if x.endswith(".aa.fasta")]
+todo = [os.path.join(PEP_PATH, x) for x in os.listdir(PEP_PATH) if x.endswith(".aa.fasta")]
 todo = np.array(todo)
 todo_spl = np.array_split(todo, NJOBS)
 
