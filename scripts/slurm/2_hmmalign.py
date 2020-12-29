@@ -4,7 +4,7 @@ import scriptgen
 import numpy as np
 import os
 
-NJOBS=2
+NJOBS=10
 UNALN_PATH = os.path.abspath(sys.argv[1])
 MARKERS_PATH = os.path.abspath(sys.argv[2])
 
@@ -29,5 +29,5 @@ for idx,chunk in enumerate(todo_spl):
         #sg.add_command(f"trimal -automated1 -in {line.replace('.fasta','.clnaln')} -out {line.replace('.fasta','.aa.filter')}")
         sg.add_command(f"trimal -resoverlap 0.50 -seqoverlap 60 -in {line.replace('.fasta','.clnaln')} -out {line.replace('.fasta','.aa.filter')}")
         sg.add_command(f"trimal -automated1 -fasta -in {line.replace('.fasta','.aa.filter')} -out {line.replace('.fasta','.aa.trim')}")
-
+        sg.add_command(f"python $CHYTRID_PHYLO/scripts/python/remove_gapped_seqs.py {line.replace('.fasta', '.aa.trim')} > {line.replace('.fasta', '.aa.trim.rmgapped')}")
     sg.write()
