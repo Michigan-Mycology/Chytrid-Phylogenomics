@@ -40,19 +40,16 @@ class MultiMarkerGeneTrees(object):
                 for tup in group.itertuples():
                     leaf = [l for l in tree.get_leaves() if l.gene == tup.gene and l.isolate == tup.isolate]
                     if(len(leaf) == 0): 
-                        print(f"Missing leafs: {tup}")
+                        print(f"Leaf not in tree (this is OK): {tup}")
                         continue
                     elif(len(leaf) > 1):
-                        print(f"Multiple leafs: {tup}")
+                        print(f"Multiple leafs corresponding to this hit (this not OK): {tup}")
                         sys.exit()
                         continue
                     else:
                         leaf = leaf[0]
                         leaf.add_feature("score", tup.score)
                         leaf.add_feature("evalue", tup.evalue)
-    
-    def filter_pipeline (self):
-        pass
             
     
     def max_score_difference(self):
