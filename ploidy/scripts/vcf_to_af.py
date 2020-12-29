@@ -117,11 +117,11 @@ if not os.path.isfile(snp_stats_out):
                     
                     p, q = calc_allele_freqs(sample)
                     
-                    newrow = [p, q, dp, mqrs]
+                    newrow = [record.CHROM, p, q, dp, mqrs]
                     llist.append(newrow)
                     #print(newrow)
     
-    df = pd.DataFrame(llist, columns = ["p", "q", "depth", "mqrs"])
+    df = pd.DataFrame(llist, columns = ["contig", "p", "q", "depth", "mqrs"])
     
     if df.shape[0] == 0:
         print ("[ERROR] All SNPs have been filtered out by --skip_na_mqrs.")
