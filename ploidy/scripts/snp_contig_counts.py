@@ -43,5 +43,5 @@ for h in l50_headers:
 with open(out_tsv_path, 'w') as o:
     for k,v in contig_counts.items():
         snp_density = float(v)/float(contig_lengths[k])
-        o.write(f"{k}\t{v}\t{snp_density}\n")
+        o.write(f"{k}\t{v}\t{snp_density}\t{contig_lengths[k]}\n")
 
