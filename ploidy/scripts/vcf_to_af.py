@@ -95,7 +95,6 @@ if args.select_contigs is not None:
 #%% Variables
 snp_stats_out = f"{args.strain}.snp_stats.tsv"
 
-CHTRYIDPHLO
 plot_script_path = os.path.join(
     CHYTRIDPHYLO, "ploidy", "scripts", "plot_af_hist.R")
 #plot_script_path = "/home/aimzez/work/Chytrid-Phylogenomics/ploidy/scripts/plot_af_hist.R"
