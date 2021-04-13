@@ -63,6 +63,9 @@ def strict_mqrsfilt(df: pd.DataFrame):
     print(f"[MQRankSum Filter] Filtering SNPs by MQRankSum strictly.")
     return df[df.mqrs == 0.0]
 
+# Location of Chytrid Phylo directory
+CHTRYIDPHLO = os.path.join(os.environ.get('CHYTRID_PHYLO'))
+
 
 #%% Argument parser
 parser = argparse.ArgumentParser()
@@ -91,7 +94,11 @@ if args.select_contigs is not None:
 
 #%% Variables
 snp_stats_out = f"{args.strain}.snp_stats.tsv"
-plot_script_path = "/home/aimzez/work/Chytrid-Phylogenomics/ploidy/scripts/plot_af_hist.R"
+
+CHTRYIDPHLO
+plot_script_path = os.path.join(
+    CHYTRIDPHYLO, "ploidy", "scripts", "plot_af_hist.R")
+#plot_script_path = "/home/aimzez/work/Chytrid-Phylogenomics/ploidy/scripts/plot_af_hist.R"
 
 #%% Generate SNP stats
 if not os.path.isfile(snp_stats_out):
