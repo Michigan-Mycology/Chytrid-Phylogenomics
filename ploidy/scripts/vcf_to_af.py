@@ -64,7 +64,7 @@ def strict_mqrsfilt(df: pd.DataFrame):
     return df[df.mqrs == 0.0]
 
 # Location of Chytrid Phylo directory
-CHTRYIDPHYLO = os.path.join(os.environ.get('CHYTRID_PHYLO'))
+CHYTRIDPHYLO = os.path.join(os.environ.get('CHYTRID_PHYLO'))
 
 
 #%% Argument parser
