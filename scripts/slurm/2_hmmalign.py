@@ -1,9 +1,9 @@
 import sys
+import os
 sys.path.append(os.path.join(os.environ.get(
     'CHYTRID_PHYLO'), "scripts", "slurm"))
 import scriptgen
 import numpy as np
-import os
 
 NJOBS = 10
 UNALN_PATH = os.path.abspath(sys.argv[1])
