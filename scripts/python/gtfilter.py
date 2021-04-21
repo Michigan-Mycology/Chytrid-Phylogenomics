@@ -56,6 +56,12 @@ def read_metadata(hitreport_path) -> pd.DataFrame:
     metadata = pd.read_csv(hitreport_path, sep="\t", header=None)
     metadata.columns = ["gene", "marker", "evalue", "score"]
     new = metadata.gene.str.split("|", expand=True)
+
+    if new.shape[1] != 2:
+        print(f"[ERROR] Malformed hit report at: {hitreport_path}")
+        print("[ERROR] Make sure that the first column of your hit report follows the format: LocusTagPrefix|Protein_ID")
+        sys.exit(1)
+
     metadata["isolate"] = new[0]
     metadata["gene"] = new[1]
     return metadata
