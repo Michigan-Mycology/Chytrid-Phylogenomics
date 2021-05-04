@@ -5,26 +5,26 @@ library(ggtree)
 library(optparse)
 
 option_list = list(
-  make_option(c("-m", "--mancur"), type="character", help = "Path to manual curation sheet. Format is important. Use the example sheet on the Chytrid-Phylogenomics repo.")
-  make_option(c("-i", "--isolates"), type="character", help = "Path to isolates sheet with at least two columns named `SPECIES.TREE.LABEL` and `LTP`.")
-  make_option(c("-h", "--hitreport"), type="character", help = "Path to `hit_report_all.tsv` from `gtfilter.py`")
-  make_option(c("-g", "--genetrees"), type="character", help = "Path to directory containing all the renamed gene trees.")
+  make_option(c("-m", "--mancur"), type="character", help = "Path to manual curation sheet. Format is important. Use the example sheet on the Chytrid-Phylogenomics repo."),
+  make_option(c("-i", "--isolates"), type="character", help = "Path to isolates sheet with at least two columns named `SPECIES.TREE.LABEL` and `LTP`."),
+  make_option(c("-r", "--hitreport"), type="character", help = "Path to `hit_report_all.tsv` from `gtfilter.py`"),
+  make_option(c("-g", "--genetrees"), type="character", help = "Path to directory containing all the renamed gene trees."),
   make_option(c("-o", "--outdir"), type="character", help = "Path to directory to write output `*toget` files.")
 )
-opt_parser = OptionParser(option_list = option_list)
+opt_parser = OptionParser(option_list = option_list, add_help_option = T)
 opt = parse_args(opt_parser)
 
-mancur = read_excel("~/DATA/cladochytriales/Manual_tree_curation.xlsx") %>%
+mancur = read_excel(opt$mancur) %>%
   rename(marker = `tree number`, delete_tips = tips_names) %>%
   gather(key = "category", value = "value", -delete_tips, -marker) %>%
   filter(!is.na(value)) %>%
   mutate(category = toupper(category)) %>%
   mutate(delete_internal_nodes = NA)
 
-isolates = read_xlsx("~/DATA/cladochytriales/tab_species_code_with_Kevin.xlsx") %>%
+isolates = read_xlsx(opt$isolates) %>%
   select(SPECIES.TREE.LABEL, LTP)
 
-scores = read_delim("~/DATA/cladochytriales/hit_report_all.tsv", delim="\t", col_names=c("protein", "marker", "evalue", "score")) %>%
+scores = read_delim(opt$hitreport, delim="\t", col_names=c("protein", "marker", "evalue", "score")) %>%
   separate("protein", into=c("LTP","protein"), sep="[|]") %>%
   left_join(isolates) %>%
   unite("tiplab", c("LTP","protein"), sep="|") %>%
@@ -32,14 +32,13 @@ scores = read_delim("~/DATA/cladochytriales/hit_report_all.tsv", delim="\t", col
   mutate(tiplab_display = tiplab)
 
 
-path = "~/DATA/cladochytriales/genetrees_renamed/"
+path = opt$genetrees
 files = list.files(path = path)
 
-setwd("/home/aimzez/DATA/cladochytriales/toget/")
 dropped_tips = matrix(nrow=0, ncol=2)
 for (f in files) {
   this_marker = gsub("[.]aa[.]tre[.]renamed", "", f)
-  print(this_marker)
+  outname = file.path(opt$outdir, paste(this_marker, "_tiplabs", sep = ""))
 
   this_marker_cat = mancur %>%
     dplyr::filter (marker == this_marker) %>%
@@ -51,7 +50,6 @@ for (f in files) {
 
     # This marker is good - print tiplabels as is.
     tree = read.newick( paste(path, f, sep="/") )
-    outname = paste(this_marker, "_tiplabs", sep = "")
     write.table(tree$tip.label, outname, quote=FALSE, row.names = FALSE)
 
   }
@@ -110,7 +108,6 @@ for (f in files) {
 
       stopifnot(length(filtered_tree$tip.label[filtered_tree$tip.label %in% tips_to_drop]) == 0)
 
-      outname = paste(this_marker, "_tiplabs", sep = "")
       write.table(filtered_tree$tip.label, outname, quote=FALSE, row.names = FALSE)
 
       d = scores %>%
@@ -150,7 +147,6 @@ for (f in files) {
       filtered_tips = tree$tip.label[!tree$tip.label %in% clean_tips]
       stopifnot ( length(tree$tip.label) - length(clean_tips) == length(filtered_tips) )
 
-      outname = paste(this_marker, "_tiplabs", sep = "")
       write.table(filtered_tips, outname, quote=FALSE, row.names = FALSE)
       dropped_tips = rbind(dropped_tips, c(this_marker, toString(clean_tips)))
 
