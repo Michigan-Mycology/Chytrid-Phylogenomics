@@ -48,7 +48,7 @@ files = list.files(path = path)
 dropped_tips = matrix(nrow=0, ncol=2)
 for (f in files) {
   this_marker = gsub("[.]aa[.]tre[.]renamed", "", f)
-  outname = file.path(opt$outdir, paste(this_marker, "_toget", sep = ""))
+  outname = file.path(opt$outdir, paste(this_marker, ".toget", sep = ""))
 
   print(this_marker)
 
