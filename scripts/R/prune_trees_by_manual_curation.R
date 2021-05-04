@@ -15,11 +15,21 @@ opt_parser = OptionParser(option_list = option_list, add_help_option = T)
 opt = parse_args(opt_parser)
 
 mancur = read_excel(opt$mancur) %>%
-  rename(marker = `tree number`, delete_tips = tips_names) %>%
+  rename(marker = `tree number`, delete_tips = tips_names)
+
+all_markers = mancur$marker
+
+mancur = mancur %>%
   gather(key = "category", value = "value", -delete_tips, -marker) %>%
   filter(!is.na(value)) %>%
   mutate(category = toupper(category)) %>%
   mutate(delete_internal_nodes = NA)
+
+if (!all(all_markers %in% mancur$marker)) {
+  print(paste("The following gene trees are missing a categorization:"))
+  print(all_markers[which(!all_markers %in% mancur$marker)])
+  stop("See above error.")
+}
 
 isolates = read_xlsx(opt$isolates) %>%
   select(SPECIES.TREE.LABEL, LTP)
@@ -38,7 +48,7 @@ files = list.files(path = path)
 dropped_tips = matrix(nrow=0, ncol=2)
 for (f in files) {
   this_marker = gsub("[.]aa[.]tre[.]renamed", "", f)
-  outname = file.path(opt$outdir, paste(this_marker, "_tiplabs", sep = ""))
+  outname = file.path(opt$outdir, paste(this_marker, "_toget", sep = ""))
 
   print(this_marker)
 
