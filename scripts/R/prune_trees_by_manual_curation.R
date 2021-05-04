@@ -40,6 +40,8 @@ for (f in files) {
   this_marker = gsub("[.]aa[.]tre[.]renamed", "", f)
   outname = file.path(opt$outdir, paste(this_marker, "_tiplabs", sep = ""))
 
+  print(this_marker)
+
   this_marker_cat = mancur %>%
     dplyr::filter (marker == this_marker) %>%
     .$category
