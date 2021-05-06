@@ -1,3 +1,9 @@
+import re
+
+pipe_pattern = re.compile("[|]")
+def escape_pipes_filenames(path):
+    return re.sub(pipe_pattern, "\|", path)
+
 class SlurmScriptGenerator(object):
     def __init__(
             self,
