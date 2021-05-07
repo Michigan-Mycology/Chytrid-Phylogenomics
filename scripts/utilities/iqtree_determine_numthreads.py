@@ -15,7 +15,7 @@ cmd = [
         "-T", "AUTO",
         "--prefix", f"{os.path.basename(alignment)}"
         ]
-
+print(" ".join(CMD))
 p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
 out,err = p.communicate()
