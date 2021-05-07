@@ -30,9 +30,6 @@ while True:
                 break
 
     if p.poll() is not None:
-        out,err = p.communicate()
-        if p.returncode != 0:
-            print(err)
         break
 
 
