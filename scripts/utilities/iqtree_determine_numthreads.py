@@ -18,6 +18,10 @@ cmd = [
 
 p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+out,err = p.communicate()
+print(err)
+
+sys.exit()
 while True:
     time.sleep(5)
     with open(logfile, 'r') as lf:
@@ -32,6 +36,7 @@ while True:
 
     if p.poll() is not None:
         break
+
 
 
 
