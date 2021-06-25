@@ -27,7 +27,7 @@ export CHYTRID_PHYLO=/path/to/Chytrid-Phylogenomics/scripts/python
      ```
      LocusTagPrefix|ProteinHeader OptionalDescription
      ```
-     There are a variety of ways to do this, but it depends a lot on what the headers in each file are. I don't have any batch scripts for doing this yet, but feel free to ask for help. Some useful command line tools for doing this include `sed` and `awk`.
+     There are a variety of ways to do this, but it depends a lot on what the headers in each file are. I don't have any batch scripts for doing this yet, but feel free to ask for help. Some useful command line tools for doing this include `sed` and `awk`. Here are some examples working with proteomes from [GenBank](https://github.com/Michigan-Mycology/Lab-Code-and-Hacks/tree/master/Phylogenomics/processing_genbank_files) and [JGI](https://github.com/Michigan-Mycology/Lab-Code-and-Hacks/tree/master/Phylogenomics/processing_jgi_files).
      
      Put the final predicted proteome FASTA files at `$CHYTRID_PHYLO/data`. You will have to make this directory first, `mkdir $CHYTRID_PHYLO/data`.
 
