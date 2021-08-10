@@ -1,6 +1,7 @@
 ### Suffixes and Such ###
 VCFSUFF="g.vcf"
 L50HEADERSUFF="l50_headers"
+CHYTRIDPHYLO=/home/amsesk/dev/Chytrid-Phylogenomics/
 
 ### Parse Command Line Arguments ###
 POSITIONAL=()
@@ -52,5 +53,5 @@ echo "DATATABLE: ${DATATABLE}"
 while read p; do
 	asm=$(basename `echo $p | cut -d ',' -f2`)
 	strain=`echo $p | cut -d ',' -f1`
-	python ~/work/Chytrid-Phylogenomics/ploidy/scripts/vcf_to_af.py --strain ${strain} -c ${L50HEADERS}/${asm}.${L50HEADERSUFF} --skip_na_mqrs --dpfilt --mqrsfilt --plot --kmercounts ${KMERHIST}/${strain}_23 ${GVCFS}/${strain}.${VCFSUFF}
+	python ${CHYTRIDPHYLO}/ploidy/scripts/vcf_to_af.py --strain ${strain} -c ${L50HEADERS}/${asm}.${L50HEADERSUFF} --skip_na_mqrs --dpfilt --mqrsfilt --plot --kmercounts ${KMERHIST}/${strain}_23 ${GVCFS}/${strain}.${VCFSUFF}
 done < $DATATABLE

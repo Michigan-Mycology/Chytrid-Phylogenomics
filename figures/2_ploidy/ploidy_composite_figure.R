@@ -3,10 +3,12 @@ library(scales)
 library(tublerone)
 library(phytools)
 library(ggtree)
-library(ggimage)
+#library(ggimage)
 library(readxl)
 library(plotrix)
 library(patchwork)
+
+PATH_PREFIX = "/scratch/amsesk/pursuit/ploidy/"
 
 weighted.sd = function(values, weights) {
   n_values = length(values)
@@ -26,7 +28,7 @@ colpal = c(
 )
 
 #### Kmer pane ####
-setwd("~/DATA/pursuit/ploidy_final/kmerhist/")
+setwd(file.path(PATH_PREFIX, "kmerhist"))
 rambr = read_delim("Ramicandelaber_brevisporus_CBS_109374.Rambr1.v1_23.khist", delim="\t") %>%
   rename(Depth = `#Depth`)
 spipal = read_delim("Spizellomyces_sp._palustris_CBS455.65_23.khist", delim="\t") %>%
@@ -53,7 +55,7 @@ kmer_pane = ggplot(rambr) +
   )
 
 #### AF pane ####
-setwd("~/DATA/pursuit/ploidy_final/snp_stats/")
+setwd(file.path(PATH_PREFIX, "snp_stats"))
 cali_af = read_delim("California_12.snp_stats.tsv", delim="\t")
 spipal_af = read_delim("Spizellomyces_sp._palustris_CBS455.65.snp_stats.tsv", delim="\t")
 rozal_af = read_delim("Rallo.snp_stats.tsv", delim="\t")
