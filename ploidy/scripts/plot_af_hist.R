@@ -1,49 +1,40 @@
 library(tidyverse)
 library(scales)
+library(patchwork)
 
-plt_pane<-function(plt_list, rows, cols) {
-  n = length(plt_list)
-  nper_row = n/rows
-  sqftage = rows*cols
-  blank_cell<-ggplot()+geom_blank()+theme(plot.background = element_rect(colour="white"),
-                                          panel.background = element_rect(colour="white"))
-  grob_list = lapply(plt_list, ggplotGrob)
-  if (length(grob_list) < sqftage) {
-    last<-length(grob_list)
-    print(last)
-    for (idx in (last+1):sqftage) {
-      grob_list[[idx]]<-ggplotGrob(blank_cell)
-    }
-  }
-  binding_expr = "rbind("
-  i=1
-  for (p in 1:rows) {
-    columns<-rep(sprintf("grob_list[[%d]]",seq(i,(i+cols-1),1)))
-    binding_expr<-str_c(binding_expr,
-                        "cbind(",
-                        str_c(columns,collapse=","),
-                        ")"
-    )
-    if (p != rows) {
-      binding_expr<-str_c(binding_expr, ",")
-    }
-    i=i+cols
-  }
-  binding_expr<-str_c(binding_expr,")")
-  print(binding_expr)
-  grid::grid.newpage()
-  grid::grid.draw(eval(parse(text=binding_expr)))
-}
-
-GatkAfHistGen <- function(df, isolate) {
-  ggplot(data=df) +
+GatkAfHistGen <- function(df, isolate, approx_norm_binom_stdev = NULL) {
+  
+  out_plt = ggplot(data=df) +
     geom_histogram(aes(x=p), fill = muted("blue"), colour="black", alpha=0.5, binwidth=0.01) +
     geom_histogram(aes(x=q), fill = muted("lightblue"), colour="black", alpha=0.5, binwidth=0.01) +
     #geom_histogram(aes(x=combined), fill = "darkgreen", colour="black", alpha=0.25, binwidth=0.01) +
     #scale_fill_manual(name = "Coverage Bins", values=c("x < 60" = "blue", "60 < x < 120" = "red", "x > 120" = "green")) +
     annotate("text", x=Inf, y=Inf, label=paste(dim(df)[1], "SNPs", sep=" "), vjust=1.2, hjust=1.2, cex=5) +
     xlab("Allele Frequency") +
-    ggtitle(paste(isolate, ", GATK SNP Allele Frequencies", sep=""))
+    ggtitle(paste(isolate, ", GATK SNP Allele Frequencies", sep="")) +
+    theme_bw() +
+    theme (
+      panel.grid = element_blank()
+    )
+  
+  if (!is.null(approx_norm_binom_stdev)) {
+    # Put the approximated normal distribution (of binomial) on the AF plot
+    x = seq(0, 1, 0.01)
+    y = dnorm(x = x, mean = 0.5, sd = approx_norm_binom_stdev)
+    dist_points = as_tibble(cbind(x,y))
+    dist_hist = hist(df$p, breaks = x)
+    max_dist_hist = max(dist_hist$counts)
+    scaling_factor = max_dist_hist/max(y)
+    dist_points = dist_points %>%
+      mutate(y_scaled = y * scaling_factor)
+    expect_range = c(0.5-approx_norm_binom_stdev, 0.5+approx_norm_binom_stdev)
+    
+    out_plt = out_plt +
+      geom_line(data = dist_points, aes(x,y_scaled), color = "red") +
+      geom_area(data = subset(dist_points, x>=expect_range[1] & x<=expect_range[2]), aes(x=x, y=y_scaled), fill = "red", alpha = 0.15)
+  }
+  
+  out_plt
 }
 
 KmerHistGen <- function(prefix, coverages = NULL) {
@@ -52,36 +43,73 @@ KmerHistGen <- function(prefix, coverages = NULL) {
     median_coverage = round(coverages[coverages$strain == basename(prefix),]$median_coverage, 2)
   }
   hist = read.table(paste(prefix, ".khist", sep=""), col.names = c("depth", "rawcount", "count"), sep="\t")
+  
+  #hist_quartiles = quantile(hist$count, prob = c(0.25, 0.5, 0.75))
+  #hist_iqr = hist_quartiles[["75%"]] - hist_quartiles[["25%"]]
+  
+  #y_max = hist_quartiles[["75%"]] + ((1.5)*(hist_iqr))
   peaks = read.table(paste(prefix, ".peaks", sep=""), comment.char = "#", col.names=c("start","center","stop","max","volume"), sep="\t")
+  lower_peak_center = min(peaks$center)
+  print(lower_peak_center)
+  print(peaks)
+  peaks = peaks %>%
+    arrange(desc(volume)) %>%
+    top_n(2, wt = volume) %>%
+    filter(center <= 10*lower_peak_center)
+  print(peaks)
+  #if ( (y_max < max(peaks$max)) | (y_max > max(peaks$max)*10 )) {
+  #  y_max = max(peaks$max)*1.25
+  #}
   ggplot(hist) +
     geom_point(aes(x=depth, y=count)) + 
     geom_line(aes(x=depth, y=count)) +
-    ylim(0,max(hist$count)*1.25) +
-    xlim(0,min(peaks$stop)*3.00) +
+    ylim(0,hist[peaks[1,2],3]*1.5) +
+    xlim(0,max(peaks$stop)*2.0) +
     geom_vline(xintercept = peaks[1,]$center, colour = "blue", alpha=0.5) +
     geom_vline(xintercept = peaks[2,]$center, colour = "blue", alpha=0.5) +
     #annotate("text", x=Inf, y=Inf, label=paste("mean coverage = ", mean_coverage, "x", sep=""), vjust=1.2, hjust=1.2, cex=5) +
     #annotate("text", x=Inf, y=Inf, label=paste("median coverage = ", median_coverage, "x", sep=""), vjust=3.0, hjust=1.2, cex=5) +
-    ggtitle(paste(basename(prefix), ", 23-mer histogram", sep=""))
+    ggtitle(paste(basename(prefix), ", 23-mer histogram", sep="")) +
+    theme_bw()+
+    theme (
+      panel.grid = element_blank()
+    )
 }
 
+KmerHistGen(prefix = "~/DATA/pursuit/ploidy_final/kmerhist/Clapol1_1_23")
 
 args = commandArgs(trailingOnly = TRUE)
 df_path = args[1]
 isolate = args[2]
+approx_norm_binom_stdev_tbl = args[4]
+
+if (!is.null(approx_norm_binom_stdev_tbl)) {
+  approx_norm_binom_stdev_tbl = read_delim(approx_norm_binom_stdev_tbl, delim = "\t", col_names = F) 
+  approx_norm_binom_stdev_tbl = approx_norm_binom_stdev_tbl %>%
+    select(X1,X4) %>%
+    rename(iso=X1, approx_norm_binom_stdev=X4)
+  
+  this_value = approx_norm_binom_stdev_tbl %>%
+    filter(iso == isolate) %>%
+    pull(approx_norm_binom_stdev)
+} else {
+  this_value = NULL
+}
+
 print(args)
 df = read_delim(args[1], delim="\t") %>%
   filter (p != 0.00 & p != 1.00)
 
-afhist = GatkAfHistGen(df, isolate)
+afhist = GatkAfHistGen(df, isolate, this_value)
 
 pdf(file = paste(isolate, ".pdf", sep=""), width = 11, height = 8.5, onefile=FALSE)
 if (!is.na(args[3])) {
   kmerhist = KmerHistGen(args[3])
-  plt_list = list()
-  plt_list[[1]] = kmerhist
-  plt_list[[2]] = afhist
-  plt_pane(plt_list, 1, 2)
+  kmerhist + afhist
+  #plt_list = list()
+  #plt_list[[1]] = kmerhist
+  #plt_list[[2]] = afhist
+  #plt_pane(plt_list, 1, 2)
 } else {
   afhist
 }

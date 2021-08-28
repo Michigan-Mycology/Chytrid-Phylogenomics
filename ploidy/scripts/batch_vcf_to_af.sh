@@ -1,7 +1,7 @@
 ### Suffixes and Such ###
 VCFSUFF="g.vcf"
 L50HEADERSUFF="l50_headers"
-CHYTRIDPHYLO=/home/amsesk/dev/Chytrid-Phylogenomics/
+CHYTRIDPHYLO=/home/aimzez/work/Chytrid-Phylogenomics/
 
 ### Parse Command Line Arguments ###
 POSITIONAL=()
