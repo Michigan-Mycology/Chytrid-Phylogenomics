@@ -46,7 +46,7 @@ ggtreeplot <- function(ggtree, data = NULL, mapping = aes(), flip=FALSE,
 }
 
 #### Tree ####
-tree = read.newick("/home/aimzez/DATA/pursuit/phylogeny_final/tims_trees/combined_tree_filtered_support.tre")
+tree = read.newick(file.path(CHYTRID_PHYLO, "figures/1_tree", "combined_tree_filtered_support_RENAMED.tre"))
 
 plt_tree = ggtree(tree)
 
@@ -166,7 +166,7 @@ final = revts(final) +
 final
 
 #### Geological Time Scale ####
-geodates = read_delim("~/Dropbox (University of Michigan)/Dropbox_Download_08052021/pursuit_paper/geologic_time_scale_dates.csv", delim=',')
+geodates = read_delim(file.path(CHYTRID_PHYLO, "figures/1_tree", "geologic_time_scale_dates.csv"), delim=',')
 
 geoplot = geodates %>%
   select(eon, period, start_mya) %>%
@@ -232,7 +232,7 @@ final = final +
 final+ timescale + plot_layout(nrow=2, heights=c(15,1))
 
 #### Genome size bubbles ####
-genome_sizes = read_delim("~/work/pursuit/sheets/Phylogenomics_Ultrastructure_renamed.tsv", delim="\t") %>%
+genome_sizes = read_delim(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Phylo_Traits.tsv"), delim="\t") %>%
   select(SPECIES.TREE.LABEL, assembly_length) %>%
   rename(label = SPECIES.TREE.LABEL)
 
@@ -260,7 +260,7 @@ genome_size_column = ggtreeplot(final, plt_tbl, aes(x=1, y=y, size=assembly_leng
     plot.background = element_blank()
   )
 #### Ploidy track ####
-ploidy_df = read_delim("~/work/pursuit/sheets/Pursuit_Phylo_Traits_041221.tsv", delim="\t") %>%
+ploidy_df = read_delim(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Phylo_Traits.tsv"), delim="\t") %>%
   select(SPECIES.TREE.LABEL, coding, known_diploid_mitosis, UM_ploidy) %>%
   rename(label = SPECIES.TREE.LABEL, ploidy = coding) %>%
   #mutate(ploidy= ifelse(UM_ploidy == 0, "?", ploidy)) %>%
@@ -286,7 +286,7 @@ ploidy_track = ggtreeplot(final, ploidy_df, aes(x=1, y=y, fill=ploidy), flip=FAL
 ploidy_track
 
 #### Character heatmap ####
-character_sheet = read_delim("~/work/pursuit/sheets/Pursuit_Phylo_Traits_041221.tsv", delim="\t") %>%
+character_sheet = read_delim(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Phylo_Traits.tsv"), delim="\t") %>%
   select(SPECIES.TREE.LABEL, Flagellar.State, `Electron-opaque_plug_in_axoneme_core_and_between_axoneme_and_flagellar_membrane (2)`,
          `Mode (M)`, `Nutritional_Mode (N)`, EFL, EF1a, Cbl_group, MMCoA_group, MetH, Selenocystein,
          Ancestral_combined:Whi5_Fungal) %>%
@@ -349,11 +349,11 @@ for (c in colnames(character_sheet)[-1]) {
 }
 
 #### SNP density bar charts ####
-l50_genome_sizes = read_delim("~/work/pursuit/sheets/Pursuit_Phylo_Traits_041221.tsv", delim="\t") %>%
+l50_genome_sizes = read_delim(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Phylo_Traits.tsv"), delim="\t") %>%
   select(SPECIES.TREE.LABEL, l50_assembly_length)
-isolates = read_xlsx("~/work/pursuit/sheets/Pursuit_Isolates.xlsx")
+isolates = read_xlsx(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Isolates.xlsx"))
 
-snp_densities = read_delim("~/DATA/pursuit/ploidy_final/all.snp_contig_counts_strainified.tsv", delim="\t", col_names = F) %>%
+snp_densities = read_delim(file.path(CHYTRID_PHYLO, "figures/1_tree", "all.snp_contig_counts_strainified.tsv"), delim="\t", col_names = F) %>%
   rename(ploidy_file_prefix = X1, contig = X2, num_snps = X3, snp_density = X4, contig_length = X5) %>%
   group_by(ploidy_file_prefix) %>%
   summarise(num_snps = sum(num_snps)) %>%
@@ -477,7 +477,7 @@ combined_tree = final_cleaned_tiplabs +
 
 #widths = c(5.5,0.3,0.3,2,1)
 combined_tree
-ggsave(filename = "~/work/Chytrid-Phylogenomics/figures/1_tree/ah.pdf", plot = combined_tree, device=cairo_pdf, width = 8.5, height = 11, units = "in")
+ggsave(filename = file.path(CHYTRID_PHYLO, "figures/1_tree/", "Tree-Figure_2_083021.pdf"), plot = combined_tree, device=cairo_pdf, width = 8.5, height = 11, units = "in")
 
 
 

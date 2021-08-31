@@ -249,8 +249,30 @@ p = ggtree(ploidy_tree) %<+% isolates +
 pies = nodepie(anc_states_final, cols=2:3, color = c("red", "blue"))
 pies_on_tree = inset(p, pies, width =0.08, height =0.08)
 
-ggsave("/scratch/amsesk/Dropbox/ploidy_pie_suppl.pdf",
-       plot = pies_on_tree,
+pies_tree_cleaned_tiplabs = pies_on_tree
+pies_tree_cleaned_tiplabs$data = pies_tree_cleaned_tiplabs$data %>%
+  mutate(label = ifelse(isTip, gsub("[_.]v[0-9][.]*[0-9]*", "", label), label)) %>%
+  mutate(label = ifelse(isTip, gsub("[.]LCG", "", label), label)) %>%
+  mutate(label = ifelse(isTip, gsub("[_]", " ", label), label)) %>%
+  mutate(label = gsub("LCG$", "", label)) %>%
+  separate(label, c("genus", "species", "strain"), sep = " ", extra = "merge") %>%
+  unite(col = "genus_species", genus, species, sep=" ", remove = F)
+
+genus_species_duplicates = pies_tree_cleaned_tiplabs$data %>%
+  filter(isTip) %>%
+  select(genus_species) %>%
+  group_by(genus_species) %>%
+  summarise(occurances = n()) %>%
+  filter(occurances > 1) %>%
+  pull(genus_species)
+
+pies_tree_cleaned_tiplabs$data = pies_tree_cleaned_tiplabs$data %>%
+  mutate(label = ifelse(species == "sp.", paste(genus, species, strain), paste(genus, species))) %>%
+  mutate(label = ifelse(genus_species %in% genus_species_duplicates, paste(genus, species, strain), label))
+
+
+ggsave("/scratch/amsesk/Dropbox/Suppl_Ploidy_Tree_Pies.pdf",
+       plot = pies_tree_cleaned_tiplabs,
        width = 8.5,
        height = 11,
        units = "in",
