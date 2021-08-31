@@ -9,6 +9,7 @@ library(plotrix)
 library(patchwork)
 
 PATH_PREFIX = "/scratch/amsesk/pursuit/ploidy/"
+SHEET_NAME = "../Pursuit_Isolates.xlsx"
 
 weighted.sd = function(values, weights) {
   n_values = length(values)
@@ -76,26 +77,25 @@ af_pane = ggplot(cali_af) +
   )
 
 #### Ploidy Scatter ####
-l50_genome_sizes = read_delim("~/work/pursuit/sheets/Pursuit_Phylo_Traits_041221.tsv", delim="\t") %>%
+l50_genome_sizes = read_delim(file.path(PATH_PREFIX, "Pursuit_Phylo_Traits_041221.tsv"), delim="\t") %>%
   select(SPECIES.TREE.LABEL, l50_assembly_length)
-isolates = read_xlsx("~/work/pursuit/sheets/Pursuit_Isolates.xlsx")
-
-ploidy_df = read_delim("~/work/pursuit/sheets/Pursuit_Phylo_Traits_041221.tsv", delim="\t") %>%
+isolates = read_xlsx(file.path(PATH_PREFIX, SHEET_NAME))
+ploidy_df = read_delim(file.path(PATH_PREFIX, "Pursuit_Phylo_Traits_041221.tsv"), delim="\t") %>%
   select(SPECIES.TREE.LABEL, coding) %>%
   rename(ploidy = coding)
 
-snp_counts = read_delim("~/DATA/pursuit/ploidy_final/all.snp_contig_counts_strainified.tsv", delim="\t", col_names = F) %>%
+snp_counts = read_delim(file.path(PATH_PREFIX, "all.snp_contig_counts_strainified.tsv"), delim="\t", col_names = F) %>%
   rename(ploidy_file_prefix = X1, contig = X2, num_snps = X3, snp_density = X4, contig_length = X5) %>%
   filter(ploidy_file_prefix == "Anasp1")
 
-snp_densities = read_delim("~/DATA/pursuit/ploidy_final/all.snp_contig_counts_strainified.tsv", delim="\t", col_names = F) %>%
+snp_densities = read_delim(file.path(PATH_PREFIX, "all.snp_contig_counts_strainified.tsv"), delim="\t", col_names = F) %>%
   rename(ploidy_file_prefix = X1, contig = X2, num_snps = X3, snp_density = X4, contig_length = X5) %>%
   group_by(ploidy_file_prefix) %>%
   summarise(snp_density_mean = weighted.mean(snp_density, contig_length), stdev = weighted.sd(snp_density, contig_length)) %>%
   left_join(isolates %>% select(SPECIES.TREE.LABEL, ploidy_file_prefix)) %>%
   select(SPECIES.TREE.LABEL, snp_density_mean, stdev)
 
-binom_expect = read_delim("~/DATA/pursuit/ploidy_final/all_AF_ranges_from_binom.tsv", delim="\t", col_names=F) %>%
+binom_expect = read_delim(file.path(PATH_PREFIX, "all_AF_ranges_from_binom.tsv"), delim="\t", col_names=F) %>%
   rename(ploidy_file_prefix = X1, mean_coverage = X2, p_in_binom_expect = X3) %>%
   left_join(isolates %>% select(SPECIES.TREE.LABEL, ploidy_file_prefix)) %>%
   select(-ploidy_file_prefix) %>%
@@ -103,19 +103,20 @@ binom_expect = read_delim("~/DATA/pursuit/ploidy_final/all_AF_ranges_from_binom.
 
 combined = binom_expect %>%
   left_join(snp_densities) %>%
-  left_join(ploidy_df)
+  left_join(ploidy_df) %>%
+  filter(mean_coverage > 10)
 
 ploidy_scatter = ggplot(combined, aes(x = p_in_binom_expect, y = snp_density_mean, fill = ploidy)) +
   geom_hline(yintercept = 0, color="black", linetype="dashed") +
   geom_vline(xintercept=0, color="black", , linetype="dashed") +
   stat_ellipse(data=subset(combined, ploidy %in% c("2", "1")), geom="polygon", aes(fill=ploidy, color=ploidy), alpha=0.2, type="norm") +
+  geom_errorbar(aes(ymax = snp_density_mean + stdev, ymin = snp_density_mean - stdev), alpha=0.30) +
   geom_point(pch = 21, cex = 2.5) +
-  geom_errorbar(aes(ymax = snp_density_mean + stdev, ymin = snp_density_mean - stdev)) +
   scale_fill_manual(values = colpal) +
   scale_color_manual(values = colpal[2:3]) +
   scale_x_continuous(expand = c(0,0.05)) +
   scale_y_continuous(expand = c(0,0)) +
-  guides(fill = F, color=F) +
+  guides(fill = "none", color= "none") +
   xlab("SNPs in Expected") +
   ylab("Mean SNP Densitiy") +
   theme_bw() +
@@ -125,11 +126,11 @@ ploidy_scatter = ggplot(combined, aes(x = p_in_binom_expect, y = snp_density_mea
     panel.grid = element_blank()
   )
 #### Tree pane ####
-isolates = read_xlsx("~/work/pursuit/sheets/Pursuit_Isolates.xlsx") %>%
+isolates = read_xlsx(file.path(PATH_PREFIX, SHEET_NAME)) %>%
   select(SPECIES.TREE.LABEL, coding) %>%
   rename(ploidy = coding)
 
-ploidy_tree = read.newick("/home/aimzez/DATA/pursuit/phylogeny_final/tims_trees/combined_tree_filtered_support.tre")
+ploidy_tree = read.newick(file.path(PATH_PREFIX, "../combined_tree_filtered_support_RENAMED.tre"))
 
 plt_ploidy_tree = ggtree(ploidy_tree, layout = "circular") %<+% isolates
 
@@ -201,6 +202,8 @@ plt_ploidy_tree = plt_ploidy_tree +
 
 plt_ploidy_tree + geom_text(aes(x=x, y=y, label=node))
 
+
+
 #### Marginal Ancestral State Reconstruction ####
 states = plt_ploidy_tree$data %>%
   select(label, isTip, ploidy) %>%
@@ -228,7 +231,7 @@ marginal_tree_pane = plt_ploidy_tree +
   #aes(color=`2.0`) +
   geom_point(data = subset(plt_ploidy_tree$data, !isTip), aes(x=x, y=y, size=`2.0`), color = "blue", pch=16, alpha=0.3) +
   geom_point(data = subset(plt_ploidy_tree$data, !isTip), aes(x=x, y=y, size=`1.0`), color = "red", pch=16, alpha=0.3) +
-  scale_color_gradient2(low="red", mid = "purple", high="blue", midpoint=0.5) +
+  #scale_color_gradient2(low="red", mid = "purple", high="blue", midpoint=0.5) +
   scale_radius(range=c(0,6)) +
   guides(size=F, fill=F) +
   theme (
@@ -236,6 +239,22 @@ marginal_tree_pane = plt_ploidy_tree +
     plot.background = element_blank()
   )
 marginal_tree_pane
+
+### Pies on tree for supplemental
+p = ggtree(ploidy_tree) %<+% isolates +
+  geom_tiplab(size = 2.5, align = T, offset = 100, linesize=0.1, linetype="dashed") +
+  xlim(0,1750) +
+  geom_tippoint(aes(x=x+50, fill = ploidy), pch=21, size =3 ) +
+  scale_fill_manual(values=colpal)
+pies = nodepie(anc_states_final, cols=2:3, color = c("red", "blue"))
+pies_on_tree = inset(p, pies, width =0.08, height =0.08)
+
+ggsave("/scratch/amsesk/Dropbox/ploidy_pie_suppl.pdf",
+       plot = pies_on_tree,
+       width = 8.5,
+       height = 11,
+       units = "in",
+       device = cairo_pdf)
 
 #### Marginal Ancestral State Reconstruction Important Node Bars
 important = anc_states_final[c(140,155,149,241,229,266,258,153),]
@@ -486,7 +505,7 @@ fig = kmer_pane +
   plot_layout(design=patchwork_design)
 
 fig
-ggsave(filename = "~/Dropbox (University of Michigan)/pursuit_paper/ploidy_combined_draft_042021_toIllustrator.pdf",
+ggsave(filename = file.path(PATH_PREFIX, "ploidy_combined_draft_082821_toIllustrator.pdf"),
        plot = fig,
        width = 8.5,
        height = 5.5,
