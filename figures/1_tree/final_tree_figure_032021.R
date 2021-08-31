@@ -7,6 +7,8 @@ library(RColorBrewer)
 library(patchwork)
 library(ggstance)
 
+CHYTRID_PHYLO="/home/amsesk/dev/Chytrid-Phylogenomics"
+
 ### Adapted from https://thackl.github.io/ggtree-composite-plots, thackl on GitHub
 tree_y <-  function(ggtree, data){
   if(!inherits(ggtree, "ggtree"))
