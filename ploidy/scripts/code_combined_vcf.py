@@ -74,7 +74,7 @@ for record in reader:
 		sample_genotype_codes.append(this_call_GT)
 
 		if args.write_snp_ident:
-			snp_idents.append( (record.CHROM, record.POS) )
+			snp_idents.append( (len(sample_genotype_codes), record.CHROM, record.POS) )
 
 	i += 1
 	if i % 5000 == 0:
@@ -96,4 +96,4 @@ df.to_csv(f"pd_parsed_vcf_gq{GQCUTOFF}_pnan{PNANCUTOFF}.csv", sep = ",")
 if args.write_snp_ident:
     with open(f"pd_parsed_vcf_gq{GQCUTOFF}_pnan{PNANCUTOFF}.snpidents.csv", 'w') as snpidout:
         for t in snp_idents:
-            snpidout.write(f"{t[0]},{t[1]}\n")
+            snpidout.write(f"{t[0]},{t[1]},{t[2]}\n")

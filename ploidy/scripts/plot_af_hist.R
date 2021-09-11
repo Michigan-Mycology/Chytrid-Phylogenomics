@@ -3,18 +3,20 @@ library(scales)
 library(patchwork)
 library(readxl)
 
-GatkAfHistGen <- function(df, isolate, approx_norm_binom_stdev = NULL, stats = NULL) {
+GatkAfHistGen <- function(df, isolate, approx_norm_binom_stdev = NULL, stats = NULL, title = isolate) {
 
   out_plt = ggplot(data=df) +
-    geom_histogram(aes(x=p), fill = muted("blue"), colour="black", alpha=0.5, binwidth=0.01) +
-    geom_histogram(aes(x=q), fill = muted("lightblue"), colour="black", alpha=0.5, binwidth=0.01) +
+    geom_histogram(aes(x=p), fill = "black", colour="black", alpha=1.0, binwidth=0.01) +
+    geom_histogram(aes(x=q), fill = "black", colour="black", alpha=1.0, binwidth=0.01) +
     #geom_histogram(aes(x=combined), fill = "darkgreen", colour="black", alpha=0.25, binwidth=0.01) +
     #scale_fill_manual(name = "Coverage Bins", values=c("x < 60" = "blue", "60 < x < 120" = "red", "x > 120" = "green")) +
     xlab("Allele Frequency") +
-    ggtitle(paste(isolate, ", GATK SNP Allele Frequencies", sep="")) +
+    ylab("Count") +
+    ggtitle(title) +
     theme_bw() +
     theme (
-      panel.grid = element_blank()
+      panel.grid = element_blank(),
+      plot.title = element_text(size=8)
     )
 
   if (!is.null(approx_norm_binom_stdev)) {
@@ -35,6 +37,10 @@ GatkAfHistGen <- function(df, isolate, approx_norm_binom_stdev = NULL, stats = N
       geom_area(data = subset(dist_points, x>=expect_range[1] & x<=expect_range[2]), aes(x=x, y=y_scaled), fill = "red", alpha = 0.15)
   }
 
+  yrange = ggplot_build(out_plt)$layout$panel_scales_y[[1]]$range$range[2]
+  out_plt = out_plt +
+    ylim(0, yrange*1.1)
+
   if (!is.null(stats)) {
     p_in_binom_expect = stats %>%
       filter(isolate == ploidy_file_prefix) %>%
@@ -49,16 +55,16 @@ GatkAfHistGen <- function(df, isolate, approx_norm_binom_stdev = NULL, stats = N
       pull(mean_coverage)
 
     out_plt = out_plt +
-      annotate("text", x=Inf, y=Inf, label=paste(round(mean_coverage,1), "x coverage", sep =""), sep=" ", vjust=1.2, hjust=1.2, cex=4) +
-      annotate("text", x=Inf, y=Inf, label=paste(dim(df)[1], "SNPs", sep=" "), vjust=2.5, hjust=1.2, cex=4) +
-      annotate("text", x=Inf, y=Inf, label=paste(round(p_in_binom_expect,2), "in expect"), sep=" ", vjust=3.8, hjust=1.2, cex=4) +
-      annotate("text", x=Inf, y=Inf, label=paste(round(snp_density,8), "SNP/bp"), sep=" ", vjust=5.1, hjust=1.1, cex=4)
+      annotate("text", x=Inf, y=Inf, label=paste(round(mean_coverage,1), "x coverage", sep =""), sep=" ", vjust=1.3, hjust=1.2, cex=2.5) +
+      annotate("text", x=Inf, y=Inf, label=paste(dim(df)[1], "SNPs", sep=" "), vjust=2.7, hjust=1.2, cex=2.5) +
+      annotate("text", x=Inf, y=Inf, label=paste(round(p_in_binom_expect,2), "in expect"), sep=" ", vjust=4.1, hjust=1.2, cex=2.5) +
+      annotate("text", x=Inf, y=Inf, label=paste(round(snp_density,8), "SNP/bp"), sep=" ", vjust=5.5, hjust=1.1, cex=2.5)
   }
 
   out_plt
 }
 
-KmerHistGen <- function(prefix, coverages = NULL) {
+KmerHistGen <- function(prefix, coverages = NULL, title = basename(prefix)) {
   if (!is.null(coverages)) {
     mean_coverage = round(coverages[coverages$strain == basename(prefix),]$mean_coverage, 2)
     median_coverage = round(coverages[coverages$strain == basename(prefix),]$median_coverage, 2)
@@ -88,12 +94,15 @@ KmerHistGen <- function(prefix, coverages = NULL) {
     xlim(0,max(peaks$stop)*2.0) +
     geom_vline(xintercept = peaks[1,]$center, colour = "blue", alpha=0.5) +
     geom_vline(xintercept = peaks[2,]$center, colour = "blue", alpha=0.5) +
+    xlab("Depth") +
+    ylab("Count") +
     #annotate("text", x=Inf, y=Inf, label=paste("mean coverage = ", mean_coverage, "x", sep=""), vjust=1.2, hjust=1.2, cex=5) +
     #annotate("text", x=Inf, y=Inf, label=paste("median coverage = ", median_coverage, "x", sep=""), vjust=3.0, hjust=1.2, cex=5) +
-    ggtitle(paste(basename(prefix), ", 23-mer histogram", sep="")) +
+    ggtitle(title) +
     theme_bw()+
     theme (
-      panel.grid = element_blank()
+      panel.grid = element_blank(),
+      plot.title = element_text(size=8)
     )
 }
 
@@ -122,7 +131,108 @@ snp_densities = read_delim(file.path(CHYTRID_PHYLO, "figures/1_tree", "all.snp_c
   mutate(snp_density = num_snps/l50_assembly_length) %>%
   rename(label = SPECIES.TREE.LABEL)
 
-#### Plot ####
+
+#### Plot here ####
+snp_stat_dir = "/scratch/amsesk/pursuit/ploidy/snp_stats/"
+approx_norm_binom_stdev_tbl = "/scratch/amsesk/pursuit/ploidy/all_AF_ranges_from_binom_withApproxStDev.tsv"
+
+approx_norm_binom_stdev_tbl = read_delim(approx_norm_binom_stdev_tbl, delim = "\t", col_names = F)
+approx_norm_binom_stdev_tbl = approx_norm_binom_stdev_tbl %>%
+  select(X1,X4) %>%
+  rename(iso=X1, approx_norm_binom_stdev=X4)
+
+snp_stat_files = list.files(snp_stat_dir)
+
+ploidyfix2stl = read_xlsx("/scratch/amsesk/pursuit/Pursuit_Isolates.xlsx") %>%
+  select(SPECIES.TREE.LABEL, ploidy_file_prefix) %>%
+  mutate(SPECIES.TREE.LABEL = gsub("[_.]v[0-9][.]*[0-9]*", "", SPECIES.TREE.LABEL)) %>%
+  mutate(SPECIES.TREE.LABEL = gsub("[.]LCG", "", SPECIES.TREE.LABEL)) %>%
+  mutate(SPECIES.TREE.LABEL = gsub("[_]", " ", SPECIES.TREE.LABEL)) %>%
+  mutate(SPECIES.TREE.LABEL = gsub("LCG$", "", SPECIES.TREE.LABEL)) %>%
+  separate(SPECIES.TREE.LABEL, c("genus", "species", "strain"), sep = " ", extra = "merge") %>%
+  unite(col = "genus_species", genus, species, sep=" ", remove = F)
+
+genus_species_duplicates = ploidyfix2stl  %>%
+  select(genus_species) %>%
+  group_by(genus_species) %>%
+  summarise(occurances = n()) %>%
+  filter(occurances > 1) %>%
+  pull(genus_species)
+
+ploidyfix2stl = ploidyfix2stl %>%
+  mutate(SPECIES.TREE.LABEL = ifelse(species == "sp.", paste(genus, species, strain), paste(genus, species))) %>%
+  mutate(SPECIES.TREE.LABEL = ifelse(genus_species %in% genus_species_duplicates, paste(genus, species, strain), SPECIES.TREE.LABEL))
+
+kmer_hists = list()
+af_hists = list()
+i=1
+for (ss in snp_stat_files) {
+  isolate = gsub("[.]snp[_]stats[.]tsv$", "", ss)
+  title = ploidyfix2stl %>%
+    filter(ploidy_file_prefix == isolate) %>%
+    pull(SPECIES.TREE.LABEL)
+  this_stddev = approx_norm_binom_stdev_tbl %>%
+    filter(iso == isolate) %>%
+    pull(approx_norm_binom_stdev)
+
+  df = read_delim(ss, delim="\t") %>%
+    filter(p != 0.00 & p != 1.00)
+
+  afhist = GatkAfHistGen(df, isolate, this_stddev, stats = snp_densities, title = title)
+
+  kmer_pref = paste("/scratch/amsesk/pursuit/ploidy/kmerhist/", isolate, "_23", sep = "")
+  kmerhist = KmerHistGen(kmer_pref, title = title)
+
+  af_hists[[i]] = afhist
+  kmer_hists[[i]] = kmerhist
+  i = i + 1
+}
+
+pageid = 1
+for (page_idx in seq(1,i,4)) {
+  plt_indices = seq(page_idx,page_idx+3,1)
+  rm = which(plt_indices > 112)
+  if (length(rm) != 0 ) {
+    plt_indices = plt_indices[-rm]
+  }
+  for (p in plt_indices) {
+    if (p == min(plt_indices)) {
+      page = kmer_hists[[p]] + af_hists[[p]]
+    } else {
+      page = page + kmer_hists[[p]] + af_hists[[p]]
+    }
+  }
+
+  page = page + plot_layout(ncol=4)
+
+  page_name = paste("/home/amsesk/dev/Chytrid-Phylogenomics/figures/suppl_hists/page", pageid, ".pdf", sep="")
+  ggsave(page_name,
+         plot = page,
+         height = 8.5,
+         width =11,
+         units = "in",
+         device = cairo_pdf)
+
+  pageid = pageid +1
+}
+
+
+afhist = GatkAfHistGen(df, isolate, this_value, stats = snp_densities)
+
+pdf(file = paste(isolate, ".pdf", sep=""), width = 11, height = 8.5, onefile=FALSE)
+if (!is.na(args[3])) {
+  kmerhist = KmerHistGen(args[3])
+  kmerhist + afhist
+  #plt_list = list()
+  #plt_list[[1]] = kmerhist
+  #plt_list[[2]] = afhist
+  #plt_pane(plt_list, 1, 2)
+} else {
+  afhist
+}
+dev.off()
+
+#### Plot with Rscript from shell ####
 args = commandArgs(trailingOnly = TRUE)
 df_path = args[1]
 isolate = args[2]

@@ -77,10 +77,10 @@ af_pane = ggplot(cali_af) +
   )
 
 #### Ploidy Scatter ####
-l50_genome_sizes = read_delim(file.path(PATH_PREFIX, "Pursuit_Phylo_Traits_041221.tsv"), delim="\t") %>%
+l50_genome_sizes = read_delim(file.path(PATH_PREFIX, "Pursuit_Phylo_Traits.tsv"), delim="\t") %>%
   select(SPECIES.TREE.LABEL, l50_assembly_length)
 isolates = read_xlsx(file.path(PATH_PREFIX, SHEET_NAME))
-ploidy_df = read_delim(file.path(PATH_PREFIX, "Pursuit_Phylo_Traits_041221.tsv"), delim="\t") %>%
+ploidy_df = read_delim(file.path(PATH_PREFIX, "Pursuit_Phylo_Traits.tsv"), delim="\t") %>%
   select(SPECIES.TREE.LABEL, coding) %>%
   rename(ploidy = coding)
 
@@ -126,7 +126,7 @@ ploidy_scatter = ggplot(combined, aes(x = p_in_binom_expect, y = snp_density_mea
     panel.grid = element_blank()
   )
 #### Tree pane ####
-isolates = read_xlsx(file.path(PATH_PREFIX, SHEET_NAME)) %>%
+isolates = read_delim(file.path(PATH_PREFIX, "Pursuit_Phylo_Traits.tsv"), delim = "\t") %>%
   select(SPECIES.TREE.LABEL, coding) %>%
   rename(ploidy = coding)
 
@@ -163,9 +163,6 @@ nnodes = ploidy_tree$Nnode
 #  rename(node = V1, edge_ploidy = V2) %>%
 #  mutate(node = as.double(node))
 #################################################
-
-plt_ploidy_tree$data = plt_ploidy_tree$data %>%
-  left_join(edgecol)
 
 plt_ploidy_tree = plt_ploidy_tree +
   scale_fill_manual(values=colpal) +
@@ -210,29 +207,29 @@ states = plt_ploidy_tree$data %>%
   filter(isTip) %>%
   select(-isTip) %>%
   mutate(ploidy = as.character(ploidy)) %>%
-  mutate(ploidy = factor(ploidy, levels=c("1.0", "2.0")))
+  mutate(ploidy = factor(ploidy, levels=c("1", "2")))
 states_lst = states$ploidy
 names(states_lst) = states$label
 
-fitER = ace(states_lst, ploidy_tree, model="ER", type="discrete")
+fitER = ace(states_lst, ploidy_tree, method = "ML", model="SYM", type="discrete")
 anc_states_probs = as_tibble(fitER$lik.anc)
 
 na_frame = cbind(rep(NA,137),rep(NA,137))
-colnames(na_frame) = c("1.0", "2.0")
+colnames(na_frame) = c("1", "2")
 
 anc_states_final = rbind(na_frame,anc_states_probs) %>%
   mutate(node = seq(1, ntips+nnodes, 1)) %>%
-  select(node, `1.0`, `2.0`)
+  select(node, `1`, `2`)
 
 plt_ploidy_tree$data = plt_ploidy_tree$data %>%
   left_join(anc_states_final)
 
 marginal_tree_pane = plt_ploidy_tree +
   #aes(color=`2.0`) +
-  geom_point(data = subset(plt_ploidy_tree$data, !isTip), aes(x=x, y=y, size=`2.0`), color = "blue", pch=16, alpha=0.3) +
-  geom_point(data = subset(plt_ploidy_tree$data, !isTip), aes(x=x, y=y, size=`1.0`), color = "red", pch=16, alpha=0.3) +
+  geom_point(data = subset(plt_ploidy_tree$data, !isTip), aes(x=x, y=y, size=`2`), color = "blue", pch=16, alpha=0.3) +
+  geom_point(data = subset(plt_ploidy_tree$data, !isTip), aes(x=x, y=y, size=`1`), color = "red", pch=16, alpha=0.3) +
   #scale_color_gradient2(low="red", mid = "purple", high="blue", midpoint=0.5) +
-  scale_radius(range=c(0,6)) +
+  scale_radius(range=c(0,4)) +
   guides(size=F, fill=F) +
   theme (
     plot.margin = unit(c(0,0,0,0), "cm"),
@@ -244,7 +241,7 @@ marginal_tree_pane
 p = ggtree(ploidy_tree) %<+% isolates +
   geom_tiplab(size = 2.5, align = T, offset = 100, linesize=0.1, linetype="dashed") +
   xlim(0,1750) +
-  geom_tippoint(aes(x=x+50, fill = ploidy), pch=21, size =3 ) +
+  geom_tippoint(aes(x=x+50, fill = ploidy), pch=21, size =2 ) +
   scale_fill_manual(values=colpal)
 pies = nodepie(anc_states_final, cols=2:3, color = c("red", "blue"))
 pies_on_tree = inset(p, pies, width =0.08, height =0.08)
@@ -307,6 +304,8 @@ anc_state_bars = ggplot(marginal_anc_bars, aes(x= group, y=value, fill = key)) +
     axis.text.x = element_text(size=6)
   )
 
+marginal_tree_pane + anc_state_bars
+
 patchwork_design = "
 144
 244
@@ -332,7 +331,7 @@ states = plt_ploidy_tree$data %>%
   filter(isTip) %>%
   select(-isTip) %>%
   mutate(ploidy = as.character(ploidy)) %>%
-  mutate(ploidy = factor(ploidy, levels=c("1.0", "2.0")))
+  mutate(ploidy = factor(ploidy, levels=c("1", "2")))
 
 # Separate missing states from coded states
 missing_states = states %>%
@@ -358,8 +357,8 @@ plot(coded_states_simmap, colors=cols, fsize=0.8,ftype="i")
 
 # Generate matrix for known coded tips
 x = coded_states %>%
-  mutate(`1.0` = ifelse(ploidy == "1.0", 1, 0)) %>%
-  mutate(`2.0` = ifelse(ploidy == "2.0", 1, 0)) %>%
+  mutate(`1` = ifelse(ploidy == "1", 1, 0)) %>%
+  mutate(`2` = ifelse(ploidy == "2", 1, 0)) %>%
   select(-ploidy)
 rnames = x %>%
   pull(label)
@@ -368,12 +367,12 @@ x = x %>%
 X = as.matrix(x)
 rownames(X) = rnames
 
-cols = setNames(c("red","blue"), c("1.0", "2.0"))
+cols = setNames(c("red","blue"), c("1", "2"))
 
 # Make matrix for missing tips with 50-50 state probabilities
 missing_X = matrix(nrow=length(missing_labels), ncol=2)
 rownames(missing_X) = missing_labels
-colnames(missing_X) = c("1.0", "2.0")
+colnames(missing_X) = c("1", "2")
 missing_X[,1] = 0.5
 missing_X[,2] = 0.5
 
@@ -395,7 +394,7 @@ stochastic_tree_pane = plt_ploidy_tree
 
 # Remove marginal ancestral state node values and ploidy
 stochastic_tree_pane$data = stochastic_tree_pane %>%
-  select(-`1.0`, -`2.0`)
+  select(-`1`, -`2`)
 
 # Add stochastic ancestral state node values and ploidy
 stochastic_tree_pane$data = stochastic_tree_pane$data %>%
@@ -405,9 +404,9 @@ stochastic_tree_pane$data
 
 # Plot ploidy_tree with the stochastic node labels
 stochastic_tree_pane = stochastic_tree_pane +
-  #aes(color=`2.0`) +
-  geom_point(data = subset(stochastic_tree_pane$data, !isTip), aes(x=x, y=y, size=`2.0`), color = "blue", pch=16, alpha=0.3) +
-  geom_point(data = subset(stochastic_tree_pane$data, !isTip), aes(x=x, y=y, size=`1.0`), color = "red", pch=16, alpha=0.3) +
+  #aes(color=`2`) +
+  geom_point(data = subset(stochastic_tree_pane$data, !isTip), aes(x=x, y=y, size=`2`), color = "blue", pch=16, alpha=0.3) +
+  geom_point(data = subset(stochastic_tree_pane$data, !isTip), aes(x=x, y=y, size=`1`), color = "red", pch=16, alpha=0.3) +
   scale_radius(range=c(0,6)) +
   guides(size=F, fill=F) +
   theme (
@@ -527,14 +526,14 @@ fig = kmer_pane +
   plot_layout(design=patchwork_design)
 
 fig
-ggsave(filename = file.path(PATH_PREFIX, "ploidy_combined_draft_082821_toIllustrator.pdf"),
+ggsave(filename = file.path("/home/amsesk/Dropbox", "ploidy_combined_draft_090921_toIllustrator.pdf"),
        plot = fig,
        width = 8.5,
        height = 5.5,
        device = "pdf")
 
 #### Phytools density map - not sure what exactly is going on with this one
-cols = setNames(c("red","green"), c("1.0", "2.0"))
+cols = setNames(c("red","green"), c("1", "2"))
 obj<-densityMap(mtrees,colors=c('red', 'blue'),lwd=4,outline=TRUE,type="fan",fsize = 0.3)
 setMap(obj, colors=cols)
 obj
