@@ -1,77 +1,72 @@
+import sys
 import vcf
 import argparse
+import pandas as pd
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-s", "--samples", action="store", required=False,
+parser.add_argument("-s",
+                    "--samples",
+                    action="store",
+                    required=False,
                     help="Samples to retain from full VCF.")
+parser.add_argument("-g",
+                    "--genes",
+                    action="store",
+                    required=False,
+                    help="Table of genes of interest.")
 parser.add_argument("vcf", action="store", help="Path to VCF.")
 args = parser.parse_args()
 
 GQCUTOFF = 99
-PNANCUTOFF = 0.05
+gt2code = {0: "R", 1: "H", 2: "A", None: "N"}
 
-gt2code = {
-    0: "R",
-    1: "H",
-    2: "A",
-    None: "N"
-}
+goi = [[p.strip() for p in x.split('\t')]
+       for x in open(args.genes).readlines()]
+goi_ids = {x[1]: x[0] for x in goi}
 
 reader = vcf.Reader(open(args.vcf, 'r'))
 
-writer = vcf.Writer(open(f"{args.vcf}.filt", 'w'), reader)
-
-sample_genotype_codes = []
-
 first_iteration = True
-i = 0
+sample_order = []
+rows = []
 for record in reader:
-    if len(record.ALT) > 1 or any([len(x) > 1 for x in record.ALT]):
-        continue
 
-    this_call_GT = []
-    this_call_GQ = []
-    #sample_order = []
+    this_row = []
 
-    if not "MQRankSum" in record.INFO:
-        continue
-    else:
-        mqrs = record.INFO["MQRankSum"]
-        if mqrs != 0.0:
-            continue
+    for i in record.INFO["ANN"]:
+        spl = [x.strip() for x in i.split("|")]
+        annot = spl[1]
+        impact = spl[2]
+        geneid = spl[4]
+        if geneid in goi_ids.keys():
+            this_row.append(goi_ids[geneid])
+            this_row.append(record.CHROM)
+            this_row.append(record.POS)
+            this_row.append(record.REF)
+            this_row.append(record.ALT)
+            this_row.append(annot)
+            this_row.append(impact)
 
-    for srec in record.samples:
+            for srec in record.samples:
 
-        if srec.gt_type is None or srec["GQ"] < GQCUTOFF:
-            this_call_GT.append(gt2code[None])
+                if srec.gt_type is None or srec["GQ"] < GQCUTOFF:
+                    this_row.append(gt2code[None])
 
-        else:
-            this_call_GT.append(gt2code[srec.gt_type])
+                else:
+                    this_row.append(gt2code[srec.gt_type])
 
-        # if first_iteration:
-        #	sample_order.append(srec.sample)
+                if first_iteration:
+                    sample_order.append(srec.sample)
 
-    # if first_iteration:
-    #	SAMPLE_ORDER = sample_order
+            if first_iteration:
+                SAMPLE_ORDER = sample_order
 
-    nsamples = len(this_call_GT)
-    nnan = len([x for x in this_call_GT if x == "N"])
+            rows.append(this_row)
 
-    # If this Call's sample genotypes are mostly NA, skip over it
-    if float(nnan) / float(nsamples) > PNANCUTOFF:
-        pass
+            first_iteration = False
 
-    else:
-        writer.write_record(record)
-        sample_genotype_codes.append(this_call_GT)
+df = pd.DataFrame(rows).transpose()
+df.index = ["GeneID", "Chrom", "Pos", "Ref", "Alt", "Annotation", "Impact"
+            ] + SAMPLE_ORDER
 
-    i += 1
-    if i % 5000 == 0:
-        print(f"Processed {i} records.")
-        print(f"Kept {len(sample_genotype_codes)} SNPs so far. ({round((float(len(sample_genotype_codes))/float(i))*100,2)}%).")
-        print(f"-----")
-
-    # if i == 10000:
-    #   break
-
-    first_iteration = False
+df.to_csv("goi_snp_dist.csv", sep=",")
