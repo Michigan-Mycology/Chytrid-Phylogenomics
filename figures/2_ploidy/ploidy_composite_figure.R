@@ -195,7 +195,7 @@ plt_ploidy_tree = plt_ploidy_tree +
   #geom_cladelabel(node = 141, label = "Outgroup", fontsize = 6, offset=25, offset.text = 25)
 
 
-  geom_tippoint(aes(fill=ploidy), color="black", pch=21, size=3)
+  geom_tippoint(aes(fill=ploidy), color="black", pch=21, size=2)
 
 plt_ploidy_tree + geom_text(aes(x=x, y=y, label=node))
 
@@ -211,7 +211,7 @@ states = plt_ploidy_tree$data %>%
 states_lst = states$ploidy
 names(states_lst) = states$label
 
-fitER = ace(states_lst, ploidy_tree, method = "ML", model="SYM", type="discrete")
+fitER = ace(states_lst, ploidy_tree, method = "ML", model="ARD", type="discrete")
 anc_states_probs = as_tibble(fitER$lik.anc)
 
 na_frame = cbind(rep(NA,137),rep(NA,137))
@@ -306,21 +306,6 @@ anc_state_bars = ggplot(marginal_anc_bars, aes(x= group, y=value, fill = key)) +
 
 marginal_tree_pane + anc_state_bars
 
-patchwork_design = "
-144
-244
-344
-344
-355
-"
-fig = kmer_pane + af_pane + ploidy_scatter + tree_pane + anc_state_bars + plot_layout(design=patchwork_design)
-
-ggsave(filename = "~/Dropbox (University of Michigan)/pursuit_paper/ploidy_combined_draft_toIllustrator.pdf",
-       plot = fig,
-       width = 8.5,
-       height = 5.5,
-       device = "pdf")
-
 ##################################################
 ##################################################
 ##################################################
@@ -349,11 +334,13 @@ coded_only_tree = drop.tip(coded_only_tree, tip = missing_states$label)
 length(coded_only_tree$tip.label)
 
 # Make the simmap based on coded states only
-coded_states_simmap = make.simmap(coded_only_tree, coded_states_lst, model = "ER")
+coded_states_simmap = make.simmap(coded_only_tree, coded_states_lst, model = "ARD")
 Q = coded_states_simmap$Q
 
+cols = setNames(c("red","blue"), c("1", "2"))
+
 # Check to initial simmap tree
-plot(coded_states_simmap, colors=cols, fsize=0.8,ftype="i")
+plot(coded_states_simmap, colors=cols, fsize=0.8, ftype="i")
 
 # Generate matrix for known coded tips
 x = coded_states %>%
@@ -367,8 +354,6 @@ x = x %>%
 X = as.matrix(x)
 rownames(X) = rnames
 
-cols = setNames(c("red","blue"), c("1", "2"))
-
 # Make matrix for missing tips with 50-50 state probabilities
 missing_X = matrix(nrow=length(missing_labels), ncol=2)
 rownames(missing_X) = missing_labels
@@ -380,7 +365,7 @@ missing_X[,2] = 0.5
 combined_states = rbind(X, missing_X)
 
 # Now perform the stochastic mapping on the whole tree, missing and coded
-mtrees = make.simmap(ploidy_tree, combined_states, model = "ER", nsim=1000)
+mtrees = make.simmap(ploidy_tree, combined_states, model = "ARD", nsim=1000)
 
 # Summarise the mtrees and get node probabilities
 mtrees_sum = summary(mtrees)
@@ -526,7 +511,7 @@ fig = kmer_pane +
   plot_layout(design=patchwork_design)
 
 fig
-ggsave(filename = file.path("/home/amsesk/Dropbox", "ploidy_combined_draft_090921_toIllustrator.pdf"),
+ggsave(filename = file.path("/home/amsesk/Dropbox", "ploidy_combined_draft_091321_toIllustrator.pdf"),
        plot = fig,
        width = 8.5,
        height = 5.5,
