@@ -4,9 +4,9 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --cpus-per-task=12
-#SBATCH --mem-per-cpu=12g
-#SBATCH --time=100:00:00
-#SBATCH --account=tyjames1
+#SBATCH --mem-per-cpu=15g
+#SBATCH --time=168:00:00
+#SBATCH --account=tromeara99
 #SBATCH --partition=standard
 
 module load Bioinformatics
@@ -25,21 +25,19 @@ do
     l=${k/.sam/}
   
     if [ -f $j ]; then
-        echo "Skippping ${f}"
+        echo Skippping ${f}$'\t'${counter}
+        counter=$((counter+1))
         continue
     fi
 
-    samtools sort --output-fmt BAM -o ${g} -@ 12 -m 10G ${f}
-    #PicardCommandLine SortSam INPUT=$f OUTPUT=$g SORT_ORDER=coordinate
+    #samtools sort --output-fmt BAM -o ${g} -@ 12 -m 178G ${f}
     
-    samtools rmdup -s --output-fmt BAM ${g} ${h}
-    #PicardCommandLine MarkDuplicates INPUT=$g OUTPUT=$h METRICS_FILE=$i
+    #samtools rmdup -s --output-fmt BAM ${g} ${h}
 
-    samtools addreplacerg -r ID:S1 -r LB:L1 -r SM:${counter} --output-fmt BAM -@ 12 -o ${j} ${h}
-    #PicardCommandLine AddOrReplaceReadGroups INPUT=$h OUTPUT=$j RGID=$counter RGLB=lib1 RGPU=1 RGPL=pacbio RGSM=$l && 
+    #samtools addreplacerg -r ID:S1 -r LB:L1 -r SM:${counter} --output-fmt BAM -@ 12 -o ${j} ${h}
     
-    samtools index ${j}
-    #PicardCommandLine BuildBamIndex INPUT=$j
+    #samtools index ${j}
     
+    echo ${f}$'\t'${counter}
     counter=$((counter+1))
 done

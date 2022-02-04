@@ -26,7 +26,7 @@ for idx,chunk in enumerate(lst):
     sg = scriptgen.SlurmScriptGenerator(
             jobname = f"gatk_{idx}",
             cpus_per_task = 1,
-            mem_per_cpu = 25,
+            mem_per_cpu = 120,
             time = 48
             )
     for bam in chunk:
@@ -44,6 +44,6 @@ for idx,chunk in enumerate(lst):
         if not os.path.isfile(picard_dict_path):
             sg.add_command(f"PicardCommandLine CreateSequenceDictionary R={asm_path} O={picard_dict_path}")
 
-        sg.add_command(f"gatk --java-options \"-Xmx24g\" HaplotypeCaller -R {asm_path} -I {bam} -O {bam.replace('.dedupped.sorted.addrg.bam', '.vcf')} -ERC GVCF -A DepthPerAlleleBySample -A MappingQuality -A LikelihoodRankSumTest")
+        sg.add_command(f"gatk --java-options \"-Xmx24g\" HaplotypeCaller -R {asm_path} -I {bam} -O {bam.replace('.dedupped.sorted.addrg.bam', '.g.vcf')} -ERC GVCF -A DepthPerAlleleBySample -A MappingQuality -A LikelihoodRankSumTest")
 
     sg.write()
