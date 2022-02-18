@@ -249,7 +249,7 @@ tree_data = as_tibble(plt_tree$data$label) %>%
   mutate(gcf = gcf/100) %>%
   mutate(gcf = ifelse(is.na(gcf), 0, gcf))
 
-final = ggtree(tree, layout = "circular")  %>%
+final = ggtree(tree, layout = "circular", size = 1)  %>%
   ggtree::rotate(node = 145) %>%
   ggtree::rotate(node = 144) %>%
   ggtree::rotate(node = 234) %>%
@@ -327,6 +327,21 @@ character_sheet_long = character_sheet_long %>%
 
 
 fig2 = final +
+  geom_fruit(data = character_sheet_long %>% filter(!char == "Mode (M)"),
+             geom = geom_tile,
+             mapping = aes(y= ID, x = char, fill = state),
+             stat = "identity",
+             color = "black",
+             offset = 0.02,
+             size = 0.5,
+             pwidth = 0.20,
+             alpha = 1.0) +
+  scale_fill_manual(values = unipal_reduced) +
+  guides(fill = "none") +
+  theme(
+    axis.text = element_blank(),
+    axis.line.x = element_blank()
+  )
   geom_fruit(data = character_sheet_long %>% filter( char %in% c("Flagellar.State", "EFL", "EF1a")),
              geom = geom_tile,
              mapping = aes(y= ID, x = char, fill = state),
@@ -353,13 +368,7 @@ fig2 = final +
              offset = 0.10,
              size = 0.5,
              pwidth = 0.38,
-             alpha = 1.0) +
-  scale_fill_manual(values = unipal_reduced) +
-  guides(fill = "none") +
-  theme(
-    axis.text = element_blank(),
-    axis.line.x = element_blank()
-  )
+             alpha = 1.0)
 
 ggsave(
   filename = file.path(CHYTRID_PHYLO, "figures_pnas_revisions/2_character_states", "CharStates_Fig_2_021722.pdf"),
