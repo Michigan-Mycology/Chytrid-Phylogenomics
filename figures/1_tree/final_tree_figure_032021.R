@@ -6,44 +6,9 @@ library(scales)
 library(RColorBrewer)
 library(patchwork)
 library(ggstance)
+library(tublerone)
 
 CHYTRID_PHYLO="/home/amsesk/dev/Chytrid-Phylogenomics"
-
-### Adapted from https://thackl.github.io/ggtree-composite-plots, thackl on GitHub
-tree_y <-  function(ggtree, data){
-  if(!inherits(ggtree, "ggtree"))
-    stop("not a ggtree object")
-  left_join(select(data, label), select(ggtree$data, label, y)) %>%
-    pull(y)
-}
-
-ggtreeplot <- function(ggtree, data = NULL, mapping = aes(), flip=FALSE,
-                       expand_limits=expansion(0,.6), ...){
-
-  if(!inherits(ggtree, "ggtree"))
-    stop("not a ggtree object")
-
-  # match the tree limits
-  print(expand_limits)
-  limits <- range(ggtree$data$y, na.rm = T)
-  limits[1] <- limits[1] + (limits[1] * expand_limits[1]) - expand_limits[2]
-  limits[2] <- limits[2] + (limits[2] * expand_limits[3]) + expand_limits[4]
-
-  print(limits)
-
-  if(flip){
-    mapping <- modifyList(aes_(x=~x), mapping)
-    data <- mutate(data, x=tree_y(ggtree, data))
-    gg <- ggplot(data=data, mapping = mapping, ...) +
-      scale_x_continuous(limits=limits, expand=c(0,0))
-  }else{
-    mapping <- modifyList(aes_(y=~y), mapping)
-    data <- mutate(data, y=tree_y(ggtree, data))
-    gg <- ggplot(data=data, mapping = mapping, ...) +
-      scale_y_continuous(limits=limits, expand=c(0,0))
-  }
-  gg
-}
 
 #### Tree ####
 tree = read.newick(file.path(CHYTRID_PHYLO, "figures/1_tree", "combined_tree_filtered_support_RENAMED.tre"))
@@ -242,7 +207,7 @@ plt_tbl = final$data %>%
   left_join(genome_sizes) %>%
   mutate(assembly_length = assembly_length/1e6)
 
-genome_size_column = ggtreeplot(final, plt_tbl, aes(x=1, y=y, size=assembly_length), flip=FALSE, expand_limits = expansion(0.00,0.6)) +
+genome_size_column = tublerone::ggtreeplot(final, plt_tbl, aes(x=1, y=y, size=assembly_length), flip=FALSE, expand_limits = expansion(0.00,0.6)) +
   geom_point(color="black", fill="burlywood1", pch=21) +
   theme_minimal() +
   guides(size=F) +
@@ -266,7 +231,7 @@ ploidy_df = read_delim(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Phylo_T
   #mutate(ploidy= ifelse(UM_ploidy == 0, "?", ploidy)) %>%
   mutate(ploidy = as.factor(ploidy), known_diploid_mitosis = as.factor(known_diploid_mitosis))
 
-ploidy_track = ggtreeplot(final, ploidy_df, aes(x=1, y=y, fill=ploidy), flip=FALSE, expand_limits = expansion(0.00,0.6)) +
+ploidy_track = tublerone::ggtreeplot(final, ploidy_df, aes(x=1, y=y, fill=ploidy), flip=FALSE, expand_limits = expansion(0.00,0.6)) +
   #geom_point(pch=22, aes(x=1, y=y, fill=known_diploid_mitosis), color="black", size=3.0, inherit.aes = F) +
   geom_point(pch=21, color="black", size=2.5) +
   scale_fill_manual(values = c("lightgrey", "red", "blue")) +
@@ -327,7 +292,7 @@ for (c in colnames(character_sheet)[-1]) {
     left_join(sub)
   print(c)
   print(pals[[c]])
-  col = ggtreeplot(final, plt_tbl, aes(x=1, y=y, fill=state), flip=FALSE, expand_limits = expansion(0.00,0.6)) +
+  col = tublerone::ggtreeplot(final, plt_tbl, aes(x=1, y=y, fill=state), flip=FALSE, expand_limits = expansion(0.00,0.6)) +
     geom_tile(color="black") +
     coord_fixed()+
     theme_minimal() +
@@ -379,7 +344,7 @@ snp_densities = read_delim(file.path(CHYTRID_PHYLO, "figures/1_tree", "all.snp_c
 #)
 
 
-snp_density_bar = ggtreeplot(final, snp_densities, aes(x=snp_density, y=y), flip=FALSE, expand_limits = expansion(0.00,0.6)) +
+snp_density_bar = tublerone::ggtreeplot(final, snp_densities, aes(x=snp_density, y=y), flip=FALSE, expand_limits = expansion(0.00,0.6)) +
   geom_barh(stat = "identity", color="black", fill="darkgreen") +
   scale_x_continuous(expand=c(0,0)) +
   theme_bw() +
