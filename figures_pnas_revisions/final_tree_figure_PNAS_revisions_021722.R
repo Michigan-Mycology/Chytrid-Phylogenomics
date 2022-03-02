@@ -7,6 +7,7 @@ library(RColorBrewer)
 library(patchwork)
 library(ggstance)
 library(tublerone)
+library(ggtreeExtra)
 
 CHYTRID_PHYLO="/home/amsesk/dev/Chytrid-Phylogenomics"
 
@@ -36,16 +37,19 @@ final = ggtree(tree)  %>%
   ggtree::rotate(node = 228) %>%
   collapse(node=229) %>%
   collapse(node=241) %>%
-  collapse(node=272)
+  collapse(node=272) %>%
+  collapse(node=256)
 final = final %<+% tree_data
 
 final = final +
   geom_text2(aes(subset=(node == 229)), cex=8, label=intToUtf8(9668), hjust =.2,vjust=.45, color = "black") +
   geom_text2(aes(subset=(node == 229)), label = "Dikarya", cex=3.0, vjust=0.4, hjust = -0.5, color = "black") +
   geom_text2(aes(subset=(node == 241)), cex=8, label=intToUtf8(9668), hjust =.2,vjust=.45, color = "black") +
-  geom_text2(aes(subset=(node == 241)), label = "Mucoromycota", cex=3.0, vjust=0.4, hjust = -0.25, color = "black") +
+  geom_text2(aes(subset=(node == 241)), label = "Mucoromycota", cex=3.0, vjust=0.4, hjust = -0.5, color = "black") +
   geom_text2(aes(subset=(node == 272)), cex=8, label=intToUtf8(9668), hjust =.2,vjust=.45, color = "black") +
-  geom_text2(aes(subset=(node == 272)), label = "Non-Fungal Eukaryota", cex=3.0, hjust =-0.2,vjust=.45, color = "black")
+  geom_text2(aes(subset=(node == 272)), label = "Non-Fungal Eukaryota", cex=3.0, hjust =-0.5,vjust=.45, color = "black") +
+  geom_text2(aes(subset=(node == 256)), cex=8, label=intToUtf8(9668), hjust =.2,vjust=.45, color = "black") +
+  geom_text2(aes(subset=(node == 256)), label = "Zoopagomycota", cex=3.0, hjust =-0.5,vjust=.45, color = "black")
 
 x_max = max(final$data$x[!is.na(final$data$x)])
 final = final +
@@ -195,6 +199,227 @@ geoplot_sub = geoplot %>%
 final = final +
   geom_rect(data = geoplot_sub, aes(xmin=start, xmax=end, ymin=tree_ylim[1], ymax=tree_ylim[2]), inherit.aes = F, alpha = 0.2)
 final+ timescale + plot_layout(nrow=2, heights=c(15,1))
+
+### Just print the tree and timescale, sans right-side data
+just_the_tree = final+ timescale + plot_layout(nrow=2, heights=c(15,1))
+ggsave(
+  filename = file.path(CHYTRID_PHYLO, "figures_pnas_revisions/1_tree", "Tree_Figure_1_021722.pdf"),
+  plot = just_the_tree,
+  device=cairo_pdf,
+  width = 8.5,
+  height = 11,
+  units = "in")
+
+
+################################################
+################## FIGURE 2 ####################
+################################################
+
+#### Tree ####
+isolates = read_xlsx("~/data/pursuit/Pursuit_Isolates.xlsx")
+
+tree = read.newick("~/data/pursuit/unpart_concat_NPB_from-consensus.treefile")
+
+old_to_new = isolates$SPECIES.TREE.LABEL
+names(old_to_new) = isolates$LTP
+
+tree = tublerone::phylo_rename_tips(tree, old_to_new)
+tree = tublerone::phylo_root(tree, outgroup = c("Capsaspora_owczarzaki_ATCC_30864.v2", "Drosophila_melanogaster.v6", "Monosiga_brevicolis_MX1.v1"))
+tree$tip.label
+plt_tree = ggtree(tree, open.angle = 0.15) %>%
+  ggtree::rotate(node = 145) %>%
+  ggtree::rotate(node = 144) %>%
+  ggtree::rotate(node = 234)
+plt_tree = plt_tree +
+  geom_tiplab(size =2, color = 'black') +
+  geom_text(aes(x=x, y=y, label=node), color='red')
+plt_tree
+#plt_tree %>%
+#  ggtree::rotate(node = 146) %>%
+#  ggtree::rotate(node=225) %>%
+#  ggtree::rotate(node = 228) +
+#  geom_text(aes(label=node)) +
+#  geom_tiplab(cex=2.5)
+
+tree_data = as_tibble(plt_tree$data$label) %>%
+  rename(label = value) %>%
+  mutate(bootstrap = label) %>%
+  separate("bootstrap", into = c("bootstrap", "qpic", "gcf", "astral"), sep = "/") %>%
+  mutate_at(vars(bootstrap, qpic, gcf, astral), as.numeric) %>%
+  mutate(gcf = gcf/100) %>%
+  mutate(gcf = ifelse(is.na(gcf), 0, gcf))
+
+final = ggtree(tree, layout = "circular", size = 1)  %>%
+  ggtree::rotate(node = 145) %>%
+  ggtree::rotate(node = 144) %>%
+  ggtree::rotate(node = 234) %>%
+  collapse(node=235) %>%
+  collapse(node=247) %>%
+  collapse(node=273) #%>%
+  #collapse(node=256)
+final = final %<+% tree_data
+
+final = final +
+  geom_highlight(node = 154, extend =4, alpha =0.1, color = "black") + #chytrid
+  geom_highlight(node = 147, extend =4, alpha =0.1, fill = "red", color = "black") + #neos
+  geom_highlight(node = 143, extend =4, alpha =0.1, fill = "green", color = "black") + #blastos
+  geom_highlight(node = 131, extend =4, alpha =0.1, fill = "yellow", color = "black") + #olpidium
+  geom_highlight(node = 262, extend =4, alpha =0.1, fill = "pink", color = "black") #zoopags
+
+#final = final +
+#  geom_text2(aes(subset=(node == 229)), cex=8, label=intToUtf8(9668), hjust =.2,vjust=.45, color = "black") +
+#  geom_text2(aes(subset=(node == 145)), label = "Dikarya", cex=3.0, vjust=0.4, hjust = -0.5, color = "black") +
+#  geom_text2(aes(subset=(node == 241)), cex=8, label=intToUtf8(9668), hjust =.2,vjust=.45, color = "black") +
+#  geom_text2(aes(subset=(node == 144)), label = "Mucoromycota", cex=3.0, vjust=0.4, hjust = -0.5, color = "black") +
+#  geom_text2(aes(subset=(node == 272)), cex=8, label=intToUtf8(9668), hjust =.2,vjust=.45, color = "black") +
+#  geom_text2(aes(subset=(node == 273)), label = "Non-Fungal Eukaryota", cex=3.0, hjust =-0.5,vjust=.45, color = "black") #+
+#  geom_text2(aes(subset=(node == 256)), cex=8, label=intToUtf8(9668), hjust =.2,vjust=.45, color = "black") +
+#  geom_text2(aes(subset=(node == 256)), label = "Zoopagomycota", cex=3.0, hjust =-0.5,vjust=.45, color = "black")
+
+x_max = max(final$data$x[!is.na(final$data$x)])
+final = final +
+  theme_tree2() #+
+  #geom_tiplab(size=2.3, color = 'black')
+
+#### Character heatmap ####
+character_sheet = read_delim(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Phylo_Traits.tsv"), delim="\t") %>%
+  select(SPECIES.TREE.LABEL, Flagellar.State, `Electron-opaque_plug_in_axoneme_core_and_between_axoneme_and_flagellar_membrane (2)`,
+         `Mode (M)`, `Nutritional_Mode (N)`, EFL, EF1a, Cbl_group, MMCoA_group, MetH, Selenocystein,
+         Ancestral_combined:Whi5_Fungal) %>%
+  rename(opaque_flag_plug = `Electron-opaque_plug_in_axoneme_core_and_between_axoneme_and_flagellar_membrane (2)`) %>%
+  mutate_at(vars(Ancestral_combined:Whi5_Fungal), ~ifelse(is.na(.), 0, .)) %>%
+  mutate(EFL = ifelse(EFL == 0, "EFL-", "EFL+")) %>%
+  mutate(EF1a = ifelse(EF1a == 0, "EF1a-", "EF1a+")) %>%
+  mutate(E2F_Ancestral = ifelse(E2F_Ancestral == 0, "EF2-", "EF2+")) %>%
+  mutate(Rb_Ancestral = ifelse(Rb_Ancestral == 0, "Rb-", "Rb+")) %>%
+  mutate(SBF_Fungal = ifelse(SBF_Fungal == 0, "SBF-", "SBF+")) %>%
+  mutate(Whi5_Fungal = ifelse(Whi5_Fungal == 0, "Whi5-", "Whi5+")) %>%
+  mutate(Flagellar.State = ifelse(Flagellar.State == 0, "not_zoosporic", "zoosporic")) %>%
+  mutate(opaque_flag_plug = ifelse(opaque_flag_plug == 0, "OFP-", "OFP+")) %>%
+  mutate(Selenocystein = ifelse(Selenocystein == 0, "Sel-", "Sel+")) %>%
+  select(-Ancestral_combined, -Fungal_combined)
+
+character_sheet_long = character_sheet %>%
+  gather(key="char", value="state", -SPECIES.TREE.LABEL) %>%
+  mutate(state = as.factor(state)) %>%
+  rename(ID = SPECIES.TREE.LABEL)
+character_sheet_long = character_sheet_long %>%
+  mutate(char = factor(character_sheet_long$char, levels = names(pals)))
+
+unipal = c("white", "mediumpurple1", "purple", "magenta4", "wheat1", "turquoise2",
+           "white", "blue", "white", "darkorange3", "white", "yellow", "green", "springgreen1",
+           "white", "white", "seagreen4", "tomato1", "white", "darkorange3", "violetred1",
+           "sienna4", "white", "darkorange1", "white", "darkolivegreen", "white", "darkorange1", "red")
+
+unipal_reduced = c("white", "mediumpurple1", "purple", "magenta4",
+           "white", "blue", "white", "darkorange3", "white", "yellow",
+           "white", "white", "darkorange3", "white", "darkorange1",
+           "white", "darkolivegreen", "white", "darkorange1", "red", "red")
+
+character_sheet_long = character_sheet_long %>%
+  filter(char %in% c("Flagellar.State", "Mode (M)", "EFL", "EF1a",
+                     "Cbl_group", "MMCoA_group", "MetH", "Selenocystein",
+                     "E2F_Ancestral", "Rb_Ancestral", "SBF_Fungal", "Whi5_Fungal"))
+character_sheet_long = character_sheet_long %>%
+  mutate(char = factor(character_sheet_long$char, levels = c("Flagellar.State", "Mode (M)", "EFL", "EF1a",
+                                                             "Cbl_group", "MMCoA_group", "MetH", "Selenocystein",
+                                                             "E2F_Ancestral", "Rb_Ancestral", "SBF_Fungal", "Whi5_Fungal")))
+
+
+fig2 = final +
+  geom_fruit(data = character_sheet_long %>% filter(!char == "Mode (M)"),
+             geom = geom_tile,
+             mapping = aes(y= ID, x = char, fill = state),
+             stat = "identity",
+             color = "black",
+             offset = 0.02,
+             size = 0.5,
+             pwidth = 0.20,
+             alpha = 1.0) +
+  scale_fill_manual(values = unipal_reduced) +
+  guides(fill = "none") +
+  theme(
+    axis.text = element_blank(),
+    axis.line.x = element_blank()
+  )
+  geom_fruit(data = character_sheet_long %>% filter( char %in% c("Flagellar.State", "EFL", "EF1a")),
+             geom = geom_tile,
+             mapping = aes(y= ID, x = char, fill = state),
+             stat = "identity",
+             color = "black",
+             offset = 0.05,
+             size = 0.5,
+             pwidth = 0.20,
+             alpha = 1.0) +
+  geom_fruit(data = character_sheet_long %>% filter(char %in% c("Cbl_group", "MMCoA_group", "MetH", "Selenocystein")),
+             geom = geom_tile,
+             mapping = aes(y= ID, x = char, fill = state),
+             stat = "identity",
+             color = "black",
+             offset = 0.10,
+             size = 0.5,
+             pwidth = 0.38,
+             alpha = 1.0) +
+  geom_fruit(data = character_sheet_long %>% filter(char %in% c("E2F_Ancestral", "Rb_Ancestral", "SBF_Fungal", "Whi5_Fungal")),
+             geom = geom_tile,
+             mapping = aes(y= ID, x = char, fill = state),
+             stat = "identity",
+             color = "black",
+             offset = 0.10,
+             size = 0.5,
+             pwidth = 0.38,
+             alpha = 1.0)
+
+ggsave(
+  filename = file.path(CHYTRID_PHYLO, "figures_pnas_revisions/2_character_states", "CharStates_Fig_2_021722.pdf"),
+  plot = fig2,
+  device=cairo_pdf,
+  width = 8.5,
+  height = 11,
+  units = "in")
+
+
+#### SNP density bar charts ####
+
+ploidy_df = read_delim(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Phylo_Traits.tsv"), delim="\t") %>%
+  select(SPECIES.TREE.LABEL, coding, known_diploid_mitosis, UM_ploidy) %>%
+  rename(ploidy = coding) %>%
+  mutate(ploidy= ifelse(ploidy == 1, "haploid", "diploid"))
+
+l50_genome_sizes = read_delim(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Phylo_Traits.tsv"), delim="\t") %>%
+  select(SPECIES.TREE.LABEL, l50_assembly_length)
+isolates = read_xlsx(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Isolates.xlsx"))
+
+snp_densities = read_delim(file.path(CHYTRID_PHYLO, "figures/1_tree", "all.snp_contig_counts_strainified.tsv"), delim="\t", col_names = F) %>%
+  rename(ploidy_file_prefix = X1, contig = X2, num_snps = X3, snp_density = X4, contig_length = X5) %>%
+  group_by(ploidy_file_prefix) %>%
+  summarise(num_snps = sum(num_snps)) %>%
+  left_join(isolates %>% select(SPECIES.TREE.LABEL, ploidy_file_prefix)) %>%
+  left_join(l50_genome_sizes) %>%
+  select(SPECIES.TREE.LABEL, num_snps, l50_assembly_length) %>%
+  mutate(snp_density = num_snps/l50_assembly_length) %>%
+  left_join(ploidy_df %>% select(SPECIES.TREE.LABEL, ploidy)) %>%
+  rename(ID = SPECIES.TREE.LABEL)
+
+fig2_ploidy = fig2 +
+  geom_fruit(data = snp_densities, geom = geom_bar,
+             mapping = aes(y = ID, x = num_snps, color = ploidy),
+             fill = "lightskyblue",
+             offset = 0.10,
+             stat = "identity",
+             pwidth = 0.65,
+             orientation = "y") +
+  scale_color_manual(values =c('blue', 'red')) +
+  guides(color="none")
+ggsave(
+  filename = file.path(CHYTRID_PHYLO, "figures_pnas_revisions/2_character_states", "CharStates_Fig_2_021722_withPloidy_snpDense.pdf"),
+  plot = fig2_ploidy,
+  device=cairo_pdf,
+  width = 8.5,
+  height = 11,
+  units = "in")
+
+
 
 #### Genome size bubbles ####
 genome_sizes = read_delim(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Phylo_Traits.tsv"), delim="\t") %>%
@@ -434,9 +659,9 @@ pwdes = "
 combined_tree = final_cleaned_tiplabs +
   timescale +
   genome_size_column +
-  ploidy_track +
+  #ploidy_track +
   character_heatmap +
-  snp_density_bar +
+  #snp_density_bar +
   plot_layout(design=pwdes)
   #plot_layout(nrow=1, widths = c(5.5,0.3,0.3,2,1))
 
