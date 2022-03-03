@@ -1,0 +1,31 @@
+# Clone repo
+git clone https://github.com/Michigan-Mycology/Chytrid-Phylogenomics.git
+
+# Set ENVIRONMENTAL variable
+export CHYTRID_PHYLO=/path/to/Chytrid-Phylogenomics
+
+# Create and activate virutal environment
+python -m venv pyvcf
+source pyvcf/bin/activate
+pip install pyvcf
+pip install numpy
+pip install pandas
+
+# Test that we can call the script without error
+python vcf_to_af.py -h
+
+# Install R dependencies
+module unload R
+module load R/3.6.1
+
+R
+> install.packages("tidyverse")
+> install.packages("scales")
+> library(tidyverse)
+> library(scales)
+> q()
+
+# Should be able to run scripts now!
+
+# To get out of python environment
+deactivate
