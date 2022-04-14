@@ -9,7 +9,7 @@ library(ggstance)
 library(tublerone)
 library(ggtreeExtra)
 
-CHYTRID_PHYLO="/home/amsesk/dev/Chytrid-Phylogenomics"
+CHYTRID_PHYLO="/home/aimzez/work/Chytrid-Phylogenomics"
 
 #### Tree ####
 tree = read.newick(file.path(CHYTRID_PHYLO, "figures/1_tree", "combined_tree_filtered_support_RENAMED.tre"))
@@ -218,12 +218,12 @@ ggsave(
 #### Tree ####
 isolates = read_xlsx("~/data/pursuit/Pursuit_Isolates.xlsx")
 
-tree = read.newick("~/data/pursuit/unpart_concat_NPB_from-consensus.treefile")
+tree = read.newick(file.path(CHYTRID_PHYLO, "figures/1_tree", "combined_tree_filtered_support_RENAMED.tre"))
 
 old_to_new = isolates$SPECIES.TREE.LABEL
 names(old_to_new) = isolates$LTP
 
-tree = tublerone::phylo_rename_tips(tree, old_to_new)
+#tree = tublerone::phylo_rename_tips(tree, old_to_new)
 tree = tublerone::phylo_root(tree, outgroup = c("Capsaspora_owczarzaki_ATCC_30864.v2", "Drosophila_melanogaster.v6", "Monosiga_brevicolis_MX1.v1"))
 tree$tip.label
 plt_tree = ggtree(tree, open.angle = 0.15) %>%
@@ -249,22 +249,28 @@ tree_data = as_tibble(plt_tree$data$label) %>%
   mutate(gcf = gcf/100) %>%
   mutate(gcf = ifelse(is.na(gcf), 0, gcf))
 
-final = ggtree(tree, layout = "circular", size = 1)  %>%
+
+#%%
+######
+final = ggtree(tree, layout = "fan", size = 0.50, open.angle = 80)  %>%
   ggtree::rotate(node = 145) %>%
   ggtree::rotate(node = 144) %>%
-  ggtree::rotate(node = 234) %>%
-  collapse(node=235) %>%
-  collapse(node=247) %>%
-  collapse(node=273) #%>%
+  ggtree::rotate(node = 234)
+  #collapse(node=235) %>%
+  #collapse(node=247) %>%
+  #collapse(node=273) #%>%
   #collapse(node=256)
 final = final %<+% tree_data
 
 final = final +
-  geom_highlight(node = 154, extend =4, alpha =0.1, color = "black") + #chytrid
-  geom_highlight(node = 147, extend =4, alpha =0.1, fill = "red", color = "black") + #neos
-  geom_highlight(node = 143, extend =4, alpha =0.1, fill = "green", color = "black") + #blastos
-  geom_highlight(node = 131, extend =4, alpha =0.1, fill = "yellow", color = "black") + #olpidium
-  geom_highlight(node = 262, extend =4, alpha =0.1, fill = "pink", color = "black") #zoopags
+  geom_highlight(node = 155, extend =1000, alpha =0.1, fill = "darkgoldenrod1", color = "black") + #chytrid
+  geom_highlight(node = 148, extend =1000, alpha =0.1, fill = "red", color = "black") + #neos
+  geom_highlight(node = 266, extend =1000, alpha =0.1, fill = "green", color = "black") + #blastos
+  geom_highlight(node = 127, extend =1000, alpha =0.1, fill = "darkturquoise", color = "black") + #olpidium
+  geom_highlight(node = 256, extend =1000, alpha =0.1, fill = "pink", color = "black") + #zoopags
+  geom_highlight(node = 229, extend =1000, alpha =0.1, fill = "darkblue", color = "black") + #dikarya
+  geom_highlight(node = 241, extend =1000, alpha =0.1, fill = "cadetblue1", color = "black") + #mucoro
+  geom_highlight(node = 7, extend =1000, alpha =0.1, fill = "coral2", color = "black") #paraphelidium
 
 #final = final +
 #  geom_text2(aes(subset=(node == 229)), cex=8, label=intToUtf8(9668), hjust =.2,vjust=.45, color = "black") +
@@ -326,15 +332,37 @@ character_sheet_long = character_sheet_long %>%
                                                              "E2F_Ancestral", "Rb_Ancestral", "SBF_Fungal", "Whi5_Fungal")))
 
 
+fruitdata1 = character_sheet_long %>% filter( char %in% c("Flagellar.State", "EFL", "EF1a")) 
+fruitdata1 = fruitdata1 %>%
+  mutate(char = factor(fruitdata1$char, levels = c("Flagellar.State", "EFL", "EF1a")))
+
 fig2 = final +
-  geom_fruit(data = character_sheet_long %>% filter(!char == "Mode (M)"),
+  geom_fruit(data = fruitdata1,
              geom = geom_tile,
              mapping = aes(y= ID, x = char, fill = state),
              stat = "identity",
              color = "black",
-             offset = 0.02,
+             offset = 0.05,
              size = 0.5,
-             pwidth = 0.20,
+             pwidth = 0.2,
+             alpha = 1.0) +
+  geom_fruit(data = character_sheet_long %>% filter(char %in% c("Cbl_group", "MMCoA_group", "MetH", "Selenocystein")),
+             geom = geom_tile,
+             mapping = aes(y= ID, x = char, fill = state),
+             stat = "identity",
+             color = "black",
+             offset = 0.05,
+             size = 0.5,
+             pwidth = 0.2,
+             alpha = 1.0) +
+  geom_fruit(data = character_sheet_long %>% filter(char %in% c("E2F_Ancestral", "Rb_Ancestral", "SBF_Fungal", "Whi5_Fungal")),
+             geom = geom_tile,
+             mapping = aes(y= ID, x = char, fill = state),
+             stat = "identity",
+             color = "black",
+             offset = 0.05,
+             size = 0.5,
+             pwidth = 0.2,
              alpha = 1.0) +
   scale_fill_manual(values = unipal_reduced) +
   guides(fill = "none") +
@@ -342,33 +370,19 @@ fig2 = final +
     axis.text = element_blank(),
     axis.line.x = element_blank()
   )
-  geom_fruit(data = character_sheet_long %>% filter( char %in% c("Flagellar.State", "EFL", "EF1a")),
-             geom = geom_tile,
-             mapping = aes(y= ID, x = char, fill = state),
-             stat = "identity",
-             color = "black",
-             offset = 0.05,
-             size = 0.5,
-             pwidth = 0.20,
-             alpha = 1.0) +
-  geom_fruit(data = character_sheet_long %>% filter(char %in% c("Cbl_group", "MMCoA_group", "MetH", "Selenocystein")),
-             geom = geom_tile,
-             mapping = aes(y= ID, x = char, fill = state),
-             stat = "identity",
-             color = "black",
-             offset = 0.10,
-             size = 0.5,
-             pwidth = 0.38,
-             alpha = 1.0) +
-  geom_fruit(data = character_sheet_long %>% filter(char %in% c("E2F_Ancestral", "Rb_Ancestral", "SBF_Fungal", "Whi5_Fungal")),
-             geom = geom_tile,
-             mapping = aes(y= ID, x = char, fill = state),
-             stat = "identity",
-             color = "black",
-             offset = 0.10,
-             size = 0.5,
-             pwidth = 0.38,
-             alpha = 1.0)
+fig2
+
+
+geom_fruit(data = character_sheet_long %>% filter(!char == "Mode (M)"),
+           geom = geom_tile,
+           mapping = aes(y= ID, x = char, fill = state),
+           stat = "identity",
+           color = "black",
+           offset = 0.02,
+           size = 0.5,
+           pwidth = 0.6,
+           alpha = 1.0)
+  
 
 ggsave(
   filename = file.path(CHYTRID_PHYLO, "figures_pnas_revisions/2_character_states", "CharStates_Fig_2_021722.pdf"),
