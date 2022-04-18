@@ -1,167 +1,64 @@
 library(tidyverse)
 library(scales)
-library(patchwork)
+library(readxl)
+library(tublerone)
+library(argparse)
 library(readxl)
 
-GatkAfHistGen <- function(df, isolate, approx_norm_binom_stdev = NULL, stats = NULL, title = isolate) {
-
-  out_plt = ggplot(data=df) +
-    geom_density(aes(x=p), fill = "black", colour="black", alpha=1.0) +
-    geom_density(aes(x=q), fill = "black", colour="black", alpha=1.0) +
-    #geom_histogram(aes(x=combined), fill = "darkgreen", colour="black", alpha=0.25, binwidth=0.01) +
-    #scale_fill_manual(name = "Coverage Bins", values=c("x < 60" = "blue", "60 < x < 120" = "red", "x > 120" = "green")) +
-    xlab("Allele Frequency") +
-    ylab("Count") +
-    ggtitle(title) +
-    theme_bw() +
-    theme (
-      panel.grid = element_blank(),
-      plot.title = element_text(size=8)
-    )
-
-  if (!is.null(approx_norm_binom_stdev)) {
-    # Put the approximated normal distribution (of binomial) on the AF plot
-    x = seq(0, 1, 0.01)
-    y = dnorm(x = x, mean = 0.5, sd = approx_norm_binom_stdev)
-    dist_points = as_tibble(cbind(x,y))
-    dist_hist = hist(df$p, breaks = x)
-    max_dist_hist = max(dist_hist$counts)
-    #scaling_factor = max_dist_hist/max(y)
-    scaling_factor = 1
-    print(dist_points)
-    dist_points = dist_points %>%
-      mutate(y_scaled = y * scaling_factor)
-    expect_range = c(0.5-approx_norm_binom_stdev, 0.5+approx_norm_binom_stdev)
-
-    out_plt = out_plt +
-      geom_line(data = dist_points, aes(x,y_scaled), color = "red") +
-      geom_area(data = subset(dist_points, x>=expect_range[1] & x<=expect_range[2]), aes(x=x, y=y_scaled), fill = "red", alpha = 0.15)
-  }
-
-  yrange = ggplot_build(out_plt)$layout$panel_scales_y[[1]]$range$range[2]
-  out_plt = out_plt +
-    ylim(0, yrange*1.1)
-
-  if (!is.null(stats)) {
-    p_in_binom_expect = stats %>%
-      filter(isolate == ploidy_file_prefix) %>%
-      pull(p_in_binom_expect)
-
-    snp_density = stats %>%
-      filter(isolate == ploidy_file_prefix) %>%
-      pull(snp_density)
-
-    mean_coverage = stats %>%
-      filter(isolate == ploidy_file_prefix) %>%
-      pull(mean_coverage)
-
-    out_plt = out_plt +
-      annotate("text", x=Inf, y=Inf, label=paste(round(mean_coverage,1), "x coverage", sep =""), sep=" ", vjust=1.3, hjust=1.2, cex=2.5) +
-      annotate("text", x=Inf, y=Inf, label=paste(dim(df)[1], "SNPs", sep=" "), vjust=2.7, hjust=1.2, cex=2.5) +
-      annotate("text", x=Inf, y=Inf, label=paste(round(p_in_binom_expect,2), "in expect"), sep=" ", vjust=4.1, hjust=1.2, cex=2.5) +
-      annotate("text", x=Inf, y=Inf, label=paste(round(snp_density,8), "SNP/bp"), sep=" ", vjust=5.5, hjust=1.1, cex=2.5)
-  }
-
-  out_plt
-}
-
-KmerHistGen <- function(prefix, coverages = NULL, title = basename(prefix)) {
-  if (!is.null(coverages)) {
-    mean_coverage = round(coverages[coverages$strain == basename(prefix),]$mean_coverage, 2)
-    median_coverage = round(coverages[coverages$strain == basename(prefix),]$median_coverage, 2)
-  }
-  hist = read.table(paste(prefix, ".khist", sep=""), col.names = c("depth", "rawcount", "count"), sep="\t")
-
-  #hist_quartiles = quantile(hist$count, prob = c(0.25, 0.5, 0.75))
-  #hist_iqr = hist_quartiles[["75%"]] - hist_quartiles[["25%"]]
-
-  #y_max = hist_quartiles[["75%"]] + ((1.5)*(hist_iqr))
-  peaks = read.table(paste(prefix, ".peaks", sep=""), comment.char = "#", col.names=c("start","center","stop","max","volume"), sep="\t")
-  lower_peak_center = min(peaks$center)
-  print(lower_peak_center)
-  print(peaks)
-  peaks = peaks %>%
-    arrange(desc(volume)) %>%
-    top_n(2, wt = volume) %>%
-    filter(center <= 10*lower_peak_center)
-  print(peaks)
-  #if ( (y_max < max(peaks$max)) | (y_max > max(peaks$max)*10 )) {
-  #  y_max = max(peaks$max)*1.25
-  #}
-  ggplot(hist) +
-    geom_point(aes(x=depth, y=count)) +
-    geom_line(aes(x=depth, y=count)) +
-    ylim(0,hist[peaks[1,2],3]*1.5) +
-    xlim(0,max(peaks$stop)*2.0) +
-    geom_vline(xintercept = peaks[1,]$center, colour = "blue", alpha=0.5) +
-    geom_vline(xintercept = peaks[2,]$center, colour = "blue", alpha=0.5) +
-    xlab("Depth") +
-    ylab("Count") +
-    #annotate("text", x=Inf, y=Inf, label=paste("mean coverage = ", mean_coverage, "x", sep=""), vjust=1.2, hjust=1.2, cex=5) +
-    #annotate("text", x=Inf, y=Inf, label=paste("median coverage = ", median_coverage, "x", sep=""), vjust=3.0, hjust=1.2, cex=5) +
-    ggtitle(title) +
-    theme_bw()+
-    theme (
-      panel.grid = element_blank(),
-      plot.title = element_text(size=8)
-    )
-}
-
 #### Plot with Rscript from shell ####
-args = commandArgs(trailingOnly = TRUE)
-df_path = args[1]
-isolate = args[2]
-approx_norm_binom_stdev_tbl = args[4]
+parser = argparse::ArgumentParser(description = "Plot an allele frequency histogram.")
+parser$add_argument('-s', '--snp_stats', action = "store", help = "Path to *.snp_stats.tsv file output from `vcf_to_af.py`: A 5-column (with column names) tab-separated text file with contig, p, q, depth, and mqrs.", required = TRUE)
+parser$add_argument('-c', '--snp_contig_counts', action = "store", help = "Path to strainified output from `snp_contig_counts.py`: A 5-column (no column names) tab-separated text file with isolate name, contig, number of SNPs, SNP density, and contig length.")
+parser$add_argument('-t', '--isolates_sheet', action = "store", help = "Path to isolate metadata sheet (in xlsx format) for ploidy_file_prefix and actual isolate name resolution. Must have `SPECIES.TREE.LABEL` and `ploidy_file_prefix` columns.", required = TRUE)
+parser$add_argument('-r', '--traits_sheet', action = "store", help = "Path to isolate traits sheet (in tsv format) for accessing l50 assembly length. Must have `SPECIES.TREE.LABEL` and `l50_assembly_length`` columns.")
+parser$add_argument('-i', '--isolate', action = "store", help = "Name of the isolate.", required = TRUE)
+parser$add_argument('-e', '--expected_dist', action = "store", help = "Path to output from `binomial_dists.R`: A 4 column (no column names) tab-separated text file with isolate name, mean depth, proportion of SNPs in the expected region of the normal-approximated null binomial distribution, and the approximate standard deviation of that distribution.")
+parser$add_argument('-k', '--kmerhist', action = "store", help = "Prefix of *.peaks and *.khist files from kmercountexact. Do not pass to exclude.")
+parser$add_argument('--kmer_xmax', action = "store", help = "Upper limit of x-axis for plots where auto-limited didn't work very well.")
+parser$add_argument('--kmer_ymax', action = "store", help = "Upper limit of y-axis for plots where auto-limited didn't work very well.")
+args = parser$parse_args()
 
-if (!is.null(approx_norm_binom_stdev_tbl)) {
-  approx_norm_binom_stdev_tbl = read_delim(approx_norm_binom_stdev_tbl, delim = "\t", col_names = F)
-  approx_norm_binom_stdev_tbl = approx_norm_binom_stdev_tbl %>%
-    select(X1,X4) %>%
-    rename(iso=X1, approx_norm_binom_stdev=X4)
-
-  this_value = approx_norm_binom_stdev_tbl %>%
-    filter(iso == isolate) %>%
-    pull(approx_norm_binom_stdev)
-} else {
-  this_value = NULL
-}
-
-print(args)
-df = read_delim(df_path, delim="\t") %>%
-  filter (p != 0.00 & p != 1.00)
-
-l50_genome_sizes = read_delim("~/data/pnas_rev/Pursuit_Phylo_Traits.tsv", delim="\t") %>%
-  select(SPECIES.TREE.LABEL, l50_assembly_length)
-isolates = read_xlsx(file.path("~/data/pnas_rev/Pursuit_Isolates.xlsx"))
-
-PATH_PREFIX = "/Users/aimzez/data/pnas_rev/ploidy"
-binom_expect = read_delim(file.path(PATH_PREFIX, "all_AF_ranges_from_binom.tsv"), delim="\t", col_names=F) %>%
-  rename(ploidy_file_prefix = X1, mean_coverage = X2, p_in_binom_expect = X3) %>%
-  left_join(isolates %>% select(SPECIES.TREE.LABEL, ploidy_file_prefix)) %>%
-  select(-ploidy_file_prefix) %>%
-  select(SPECIES.TREE.LABEL, mean_coverage, p_in_binom_expect)
-
-snp_densities = read_delim(file.path(PATH_PREFIX, "all.snp_contig_counts_strainified.tsv"), delim="\t", col_names = F) %>%
+isolate = args$isolate
+isolates_sheet = read_xlsx(args$isolates_sheet)
+snps = read_delim(args$snp_stats, delim = "\t") %>%
+  filter(p != 0.00 & p != 1.00)
+extra_snp_stats = read_delim(args$snp_contig_counts, delim = "\t", col_names = F) %>%
   rename(ploidy_file_prefix = X1, contig = X2, num_snps = X3, snp_density = X4, contig_length = X5) %>%
   group_by(ploidy_file_prefix) %>%
   summarise(num_snps = sum(num_snps)) %>%
-  left_join(isolates %>% select(SPECIES.TREE.LABEL, ploidy_file_prefix)) %>%
-  left_join(l50_genome_sizes) %>%
-  left_join(binom_expect) %>%
-  select(SPECIES.TREE.LABEL, ploidy_file_prefix, num_snps, l50_assembly_length, mean_coverage, p_in_binom_expect) %>%
-  mutate(snp_density = num_snps/l50_assembly_length) %>%
-  rename(label = SPECIES.TREE.LABEL)
+  left_join(isolates_sheet %>% select(SPECIES.TREE.LABEL, ploidy_file_prefix))
 
-afhist = GatkAfHistGen(df, isolate, this_value, stats = snp_densities)
+if (!is.null(args$expected_dist) && !is.null(args$traits_sheet)) {
+
+  expected_dist = read_delim(args$expected_dist, delim="\t", col_names = F) %>%
+    rename(ploidy_file_prefix = X1, mean_coverage = X2, p_in_binom_expect = X3, approx_stdev = X4) %>%
+    left_join(isolates_sheet %>% select(SPECIES.TREE.LABEL, ploidy_file_prefix)) %>%
+    filter(ploidy_file_prefix == isolate) %>%
+    select(-ploidy_file_prefix) %>%
+    select(SPECIES.TREE.LABEL, mean_coverage, p_in_binom_expect, approx_stdev)
+  approx_stdev = expected_dist %>%
+    pull(approx_stdev)
+
+  l50_genome_sizes = read_delim(args$traits_sheet, delim = "\t") %>%
+    select(SPECIES.TREE.LABEL, l50_assembly_length)
+
+  extra_snp_stats = extra_snp_stats %>%
+    left_join(expected_dist) %>%
+    left_join(l50_genome_sizes) %>%
+    mutate(snp_density = num_snps/l50_assembly_length)
+
+  afhist = GatkAfHistGen(snps, isolate, approx_stdev, stats = extra_snp_stats)
+}  else if (!is.null(args$expected_dist) || !is.null(args$traits_sheet)) {
+  stop("-t|--traits_sheet and -e|--expected_dist must either be set together or not at all")
+} else {
+  afhist = GatkAfHistGen(snps, isolate)
+}
 
 pdf(file = paste(isolate, ".pdf", sep=""), width = 11, height = 8.5, onefile=FALSE)
-if (!is.na(args[3])) {
-  kmerhist = KmerHistGen(args[3])
+if (!is.null(args$kmerhist)) {
+  library(patchwork)
+  kmerhist = KmerHistGen(args$kmerhist, xmax = args$kmer_xmax, ymax = args$kmer_ymax)
   kmerhist + afhist
-  #plt_list = list()
-  #plt_list[[1]] = kmerhist
-  #plt_list[[2]] = afhist
-  #plt_pane(plt_list, 1, 2)
 } else {
   afhist
 }
