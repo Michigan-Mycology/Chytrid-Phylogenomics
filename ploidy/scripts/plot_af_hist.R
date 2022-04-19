@@ -47,7 +47,9 @@ if (!is.null(args$expected_dist) && !is.null(args$traits_sheet)) {
     left_join(l50_genome_sizes) %>%
     mutate(snp_density = num_snps/l50_assembly_length)
 
-  afhist = GatkAfHistGen(snps, isolate, approx_stdev, stats = extra_snp_stats)
+  title = expected_dist %>% pull(SPECIES.TREE.LABEL)
+  title = gsub("[_]", " ", title)
+  afhist = GatkAfHistGen(snps, isolate, approx_stdev, stats = extra_snp_stats, title = "")
 }  else if (!is.null(args$expected_dist) || !is.null(args$traits_sheet)) {
   stop("-t|--traits_sheet and -e|--expected_dist must either be set together or not at all")
 } else {
@@ -57,7 +59,7 @@ if (!is.null(args$expected_dist) && !is.null(args$traits_sheet)) {
 pdf(file = paste(isolate, ".pdf", sep=""), width = 11, height = 8.5, onefile=FALSE)
 if (!is.null(args$kmerhist)) {
   library(patchwork)
-  kmerhist = KmerHistGen(args$kmerhist, xmax = args$kmer_xmax, ymax = args$kmer_ymax)
+  kmerhist = KmerHistGen(args$kmerhist, xmax = args$kmer_xmax, ymax = args$kmer_ymax, title = title)
   kmerhist + afhist
 } else {
   afhist
