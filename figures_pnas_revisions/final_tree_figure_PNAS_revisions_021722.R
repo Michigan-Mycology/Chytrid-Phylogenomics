@@ -200,10 +200,31 @@ final = final +
   geom_rect(data = geoplot_sub, aes(xmin=start, xmax=end, ymin=tree_ylim[1], ymax=tree_ylim[2]), inherit.aes = F, alpha = 0.2)
 final+ timescale + plot_layout(nrow=2, heights=c(15,1))
 
+final_cleaned_tiplabs = final
+final_cleaned_tiplabs$data = final_cleaned_tiplabs$data %>%
+  mutate(label = ifelse(isTip, gsub("[_.]v[0-9][.]*[0-9]*", "", label), label)) %>%
+  mutate(label = ifelse(isTip, gsub("[.]LCG", "", label), label)) %>%
+  mutate(label = ifelse(isTip, gsub("[_]", " ", label), label)) %>%
+  mutate(label = gsub("LCG$", "", label)) %>%
+  separate(label, c("genus", "species", "strain"), sep = " ", extra = "merge") %>%
+  unite(col = "genus_species", genus, species, sep=" ", remove = F)
+
+genus_species_duplicates = final_cleaned_tiplabs$data %>%
+  filter(isTip) %>%
+  select(genus_species) %>%
+  group_by(genus_species) %>%
+  summarise(occurances = n()) %>%
+  filter(occurances > 1) %>%
+  pull(genus_species)
+
+final_cleaned_tiplabs$data = final_cleaned_tiplabs$data %>%
+  mutate(label = ifelse(species == "sp.", paste(genus, species, strain), paste(genus, species))) %>%
+  mutate(label = ifelse(genus_species %in% genus_species_duplicates, paste(genus, species, strain), label))
+
 ### Just print the tree and timescale, sans right-side data
-just_the_tree = final+ timescale + plot_layout(nrow=2, heights=c(15,1))
+just_the_tree = final_cleaned_tiplabs + timescale + plot_layout(nrow=2, heights=c(15,1))
 ggsave(
-  filename = file.path(CHYTRID_PHYLO, "figures_pnas_revisions/1_tree", "Tree_Figure_1_021722.pdf"),
+  filename = file.path(CHYTRID_PHYLO, "figures_pnas_revisions/1_tree", "Tree_Figure_2_042222.pdf"),
   plot = just_the_tree,
   device=cairo_pdf,
   width = 8.5,
@@ -332,7 +353,7 @@ character_sheet_long = character_sheet_long %>%
                                                              "E2F_Ancestral", "Rb_Ancestral", "SBF_Fungal", "Whi5_Fungal")))
 
 
-fruitdata1 = character_sheet_long %>% filter( char %in% c("Flagellar.State", "EFL", "EF1a")) 
+fruitdata1 = character_sheet_long %>% filter( char %in% c("Flagellar.State", "EFL", "EF1a"))
 fruitdata1 = fruitdata1 %>%
   mutate(char = factor(fruitdata1$char, levels = c("Flagellar.State", "EFL", "EF1a")))
 
@@ -382,7 +403,7 @@ geom_fruit(data = character_sheet_long %>% filter(!char == "Mode (M)"),
            size = 0.5,
            pwidth = 0.6,
            alpha = 1.0)
-  
+
 
 ggsave(
   filename = file.path(CHYTRID_PHYLO, "figures_pnas_revisions/2_character_states", "CharStates_Fig_2_021722.pdf"),
