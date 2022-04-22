@@ -110,12 +110,6 @@ for (i in seq(1, length(plts), plots_per_page)) {
   d = "1233
   4455"
   page = plts[[i]] + plts[[i+1]] + plts[[i+2]] + plts[[i+3]] + plot_layout(design=d)
-  #print(i)
-  #for (n in seq(i+1, i+(plots_per_page-1), 1)) {
-  #  print(n)
-  #  page = page + plts[[n]]
-  #}
-  #page = page + plot_layout(ncol = 2, nrow = 2)
   ggsave(filename = paste("AF_hists_", page_number, ".pdf", sep=""), plot=page, width = 8.5, height = 11, onefile=FALSE)
 
   page_number = page_number + 1
