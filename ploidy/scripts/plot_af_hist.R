@@ -5,6 +5,57 @@ library(tublerone)
 library(argparse)
 library(readxl)
 
+produce_single_plot = function(args) {
+  isolate = args$isolate
+  isolates_sheet = read_xlsx(args$isolates_sheet)
+  snps = read_delim(args$snp_stats, delim = "\t") %>%
+    filter(p != 0.00 & p != 1.00)
+  extra_snp_stats = read_delim(args$snp_contig_counts, delim = "\t", col_names = F) %>%
+    rename(ploidy_file_prefix = X1, contig = X2, num_snps = X3, snp_density = X4, contig_length = X5) %>%
+    group_by(ploidy_file_prefix) %>%
+    summarise(num_snps = sum(num_snps)) %>%
+    left_join(isolates_sheet %>% select(SPECIES.TREE.LABEL, ploidy_file_prefix))
+
+  if (!is.null(args$expected_dist) && !is.null(args$traits_sheet)) {
+
+    expected_dist = read_delim(args$expected_dist, delim="\t", col_names = F) %>%
+      rename(ploidy_file_prefix = X1, mean_coverage = X2, p_in_binom_expect = X3, approx_stdev = X4) %>%
+      left_join(isolates_sheet %>% select(SPECIES.TREE.LABEL, ploidy_file_prefix)) %>%
+      filter(ploidy_file_prefix == isolate) %>%
+      select(-ploidy_file_prefix) %>%
+      select(SPECIES.TREE.LABEL, mean_coverage, p_in_binom_expect, approx_stdev)
+    approx_stdev = expected_dist %>%
+      pull(approx_stdev)
+
+    l50_genome_sizes = read_delim(args$traits_sheet, delim = "\t") %>%
+      select(SPECIES.TREE.LABEL, l50_assembly_length, coding)
+
+    extra_snp_stats = extra_snp_stats %>%
+      left_join(expected_dist) %>%
+      left_join(l50_genome_sizes) %>%
+      mutate(snp_density = num_snps/l50_assembly_length)
+
+    title = expected_dist %>% pull(SPECIES.TREE.LABEL)
+    title = gsub("[_]", " ", title)
+    print(snps)
+    print(approx_stdev)
+    print(extra_snp_stats)
+    afhist = GatkAfHistGen(snps, isolate, approx_stdev, stats = extra_snp_stats, title = "")
+  }  else if (!is.null(args$expected_dist) || !is.null(args$traits_sheet)) {
+    stop("-t|--traits_sheet and -e|--expected_dist must either be set together or not at all")
+  } else {
+    afhist = GatkAfHistGen(snps, isolate)
+  }
+
+  if (!is.null(args$kmerhist)) {
+    library(patchwork)
+    kmerhist = KmerHistGen(args$kmerhist, xmax = args$kmer_xmax, ymax = args$kmer_ymax, title = title)
+    kmerhist + afhist
+  } else {
+    afhist
+  }
+}
+
 #### Plot with Rscript from shell ####
 parser = argparse::ArgumentParser(description = "Plot an allele frequency histogram.")
 parser$add_argument('-s', '--snp_stats', action = "store", help = "Path to *.snp_stats.tsv file output from `vcf_to_af.py`: A 5-column (with column names) tab-separated text file with contig, p, q, depth, and mqrs.", required = TRUE)
@@ -18,50 +69,8 @@ parser$add_argument('--kmer_xmax', action = "store", help = "Upper limit of x-ax
 parser$add_argument('--kmer_ymax', action = "store", help = "Upper limit of y-axis for plots where auto-limited didn't work very well.")
 args = parser$parse_args()
 
-isolate = args$isolate
-isolates_sheet = read_xlsx(args$isolates_sheet)
-snps = read_delim(args$snp_stats, delim = "\t") %>%
-  filter(p != 0.00 & p != 1.00)
-extra_snp_stats = read_delim(args$snp_contig_counts, delim = "\t", col_names = F) %>%
-  rename(ploidy_file_prefix = X1, contig = X2, num_snps = X3, snp_density = X4, contig_length = X5) %>%
-  group_by(ploidy_file_prefix) %>%
-  summarise(num_snps = sum(num_snps)) %>%
-  left_join(isolates_sheet %>% select(SPECIES.TREE.LABEL, ploidy_file_prefix))
-
-if (!is.null(args$expected_dist) && !is.null(args$traits_sheet)) {
-
-  expected_dist = read_delim(args$expected_dist, delim="\t", col_names = F) %>%
-    rename(ploidy_file_prefix = X1, mean_coverage = X2, p_in_binom_expect = X3, approx_stdev = X4) %>%
-    left_join(isolates_sheet %>% select(SPECIES.TREE.LABEL, ploidy_file_prefix)) %>%
-    filter(ploidy_file_prefix == isolate) %>%
-    select(-ploidy_file_prefix) %>%
-    select(SPECIES.TREE.LABEL, mean_coverage, p_in_binom_expect, approx_stdev)
-  approx_stdev = expected_dist %>%
-    pull(approx_stdev)
-
-  l50_genome_sizes = read_delim(args$traits_sheet, delim = "\t") %>%
-    select(SPECIES.TREE.LABEL, l50_assembly_length)
-
-  extra_snp_stats = extra_snp_stats %>%
-    left_join(expected_dist) %>%
-    left_join(l50_genome_sizes) %>%
-    mutate(snp_density = num_snps/l50_assembly_length)
-
-  title = expected_dist %>% pull(SPECIES.TREE.LABEL)
-  title = gsub("[_]", " ", title)
-  afhist = GatkAfHistGen(snps, isolate, approx_stdev, stats = extra_snp_stats, title = "")
-}  else if (!is.null(args$expected_dist) || !is.null(args$traits_sheet)) {
-  stop("-t|--traits_sheet and -e|--expected_dist must either be set together or not at all")
-} else {
-  afhist = GatkAfHistGen(snps, isolate)
-}
-
-pdf(file = paste(isolate, ".pdf", sep=""), width = 11, height = 8.5, onefile=FALSE)
-if (!is.null(args$kmerhist)) {
-  library(patchwork)
-  kmerhist = KmerHistGen(args$kmerhist, xmax = args$kmer_xmax, ymax = args$kmer_ymax, title = title)
-  kmerhist + afhist
-} else {
-  afhist
-}
+pdf(file = paste(args$isolate, ".pdf", sep=""), width = 11, height = 8.5, onefile=FALSE)
+produce_single_plot(args)
 dev.off()
+
+on.exit(traceback())
