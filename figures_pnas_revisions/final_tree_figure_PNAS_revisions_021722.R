@@ -434,6 +434,14 @@ fig2 = final +
   )
 fig2
 
+ggsave(
+  filename = file.path(CHYTRID_PHYLO, "figures_pnas_revisions/2_character_states", "CharStates_Fig_3_042522.pdf"),
+  plot = fig2,
+  device=cairo_pdf,
+  width = 8.5,
+  height = 11,
+  units = "in")
+
 
 geom_fruit(data = character_sheet_long %>% filter(!char == "Mode (M)"),
            geom = geom_tile,
@@ -445,14 +453,6 @@ geom_fruit(data = character_sheet_long %>% filter(!char == "Mode (M)"),
            pwidth = 0.6,
            alpha = 1.0)
 
-
-ggsave(
-  filename = file.path(CHYTRID_PHYLO, "figures_pnas_revisions/2_character_states", "CharStates_Fig_2_021722.pdf"),
-  plot = fig2,
-  device=cairo_pdf,
-  width = 8.5,
-  height = 11,
-  units = "in")
 
 
 
