@@ -4,7 +4,7 @@ library(readxl)
 
 nametips = function(lab, isolates) {
   spl = strsplit(lab, split="[|]")
-  new = isolates %>% 
+  new = isolates %>%
     filter(LTP == spl[[1]][1]) %>%
     select (SPECIES.TREE.LABEL) %>%
     .$SPECIES.TREE.LABEL

@@ -31,7 +31,7 @@ setwd("/home/aimzez/DATA/phylogeny_trimfix/round3_scorefilt_25perc_gaps/gap25_ma
 for (f in files) {
   #print(f)
   tree = read.newick( paste(path, f, sep="/") )
-  
+
   tree = midpoint.root(tree)
   ntips = length(tree$tip.label)
   this_marker = gsub("[.]aa[.]tre[.]renamed", "", f)
@@ -39,20 +39,20 @@ for (f in files) {
     filter(marker == this_marker) %>%
     .$tips
   dt = unlist(strsplit(dt, split = ", "))
-  
+
   annot = as_tibble(tree$tip.label) %>%
     rename(tip = value) %>%
     mutate(group = tip %in% dt)
 
   annotated_tree = ggtree(tree, branch.length = 0.1) %<+% annot +
-    geom_tiplab(aes(color=group), cex=3) + 
+    geom_tiplab(aes(color=group), cex=3) +
     ggtitle(this_marker) +
     theme_tree()
-  
+
   x_max = layer_scales(annotated_tree)$x$range$range[2]
   annotated_tree = annotated_tree +
     ggplot2::xlim(0, x_max*1.5)
-  
+
   ggsave(filename = paste(f, "mancur_HL", ".pdf", sep=""), plot = annotated_tree, device = "pdf", width=17, height=(14*((ntips)/140)), units="in", limitsize = FALSE)
 }
 annotated_tree
