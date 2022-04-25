@@ -13,13 +13,13 @@ isolates = read_xlsx("/home/amsesk/data/pursuit/more_hmm/fasttree/../../Pursuit_
 
 ##### Batch print annotated trees #####
 raw_path = "~/DATA/phylogeny/round1_raw/fast_gene_trees_renamed/"
-filt_path = "/home/amsesk/data/pursuit/more_hmm/fasttree"
+filt_path = "/home/amsesk/data/pursuit/more_hmm/filt/fasttree_renamed/"
 
 path = filt_path
 
 files = list.files(path = path)
 
-scores = read_delim("/home/amsesk/data/pursuit/more_hmm/unaln/hit_report_all.tsv", delim="\t", col_names=c("protein", "marker", "evalue", "score")) %>%
+scores = read_delim("/home/amsesk/data/pursuit/more_hmm/raw/unaln/hit_report_all.tsv", delim="\t", col_names=c("protein", "marker", "evalue", "score")) %>%
   separate("protein", into=c("LTP","protein"), sep="[|]") %>%
   left_join(isolates) %>%
   unite("tiplab", c("LTP","protein"), sep="|") %>%
@@ -35,14 +35,14 @@ scores = read_delim("/home/amsesk/data/pursuit/more_hmm/unaln/hit_report_all.tsv
 #scores %<>%
 #  mutate(TAX.GROUP = as.character(TAX.GROUP))
 
-setwd("/home/amsesk/data/pursuit/more_hmm/fasttree/pdf")
+setwd("/home/amsesk/data/pursuit/more_hmm/filt/fasttree_renamed/pdf")
 for (f in files) {
   print(f)
   tree = read.newick( paste(path, f, sep="/") )
 
   tree = midpoint.root(tree)
   ntips = length(tree$tip.label)
-  this_marker = gsub("[.]tre", "", f)
+  this_marker = gsub("[.]tre[.]renamed", "", f)
   d = scores %>%
     filter(marker == this_marker)
   annotated_tree = ggtree(tree, branch.length = 0.1) %<+% d +
