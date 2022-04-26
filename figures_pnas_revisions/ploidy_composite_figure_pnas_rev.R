@@ -36,13 +36,13 @@ rambr = read_delim("Ramicandelaber_brevisporus_CBS_109374.Rambr1.v1_23.khist", d
   rename(Depth = `#Depth`)
 spipal = read_delim("Spizellomyces_sp._palustris_CBS455.65_23.khist", delim="\t") %>%
   rename(Depth = `#Depth`)
-mixos = read_delim("Mixia_osmundae_23.khist", delim="\t") %>%
+lobos = read_delim("Lobosporangium_transversale_NRRL_3116_23.khist", delim="\t") %>%
   rename(Depth = `#Depth`)
 
-hapl_kmer_pane = ggplot(mixos) +
-  geom_area(aes(x = Depth, y = logScale), color="red", fill="red", alpha=0.3, size=1) +
-  scale_x_continuous(expand = c(0,0), limits = c(0,8e3)) +
-  scale_y_continuous(expand = c(0,0), limits = c(0,1e6)) +
+hapl_kmer_pane = ggplot(lobos) +
+  geom_area(aes(x = Depth, y = logScale/1e6), color="red", fill="red", alpha=0.3, size=1) +
+  scale_x_continuous(expand = c(0,0), limits = c(0,450)) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,12.5)) +
   theme_bw() +
   ylab("kmer Counts") +
   xlab("kmer Depth") +
@@ -63,9 +63,9 @@ spipal = read_delim("Spizellomyces_sp._palustris_CBS455.65_23.khist", delim="\t"
   rename(Depth = `#Depth`)
 
 dipl_kmer_pane = ggplot(rambr) +
-  geom_area(aes(x = Depth, y = logScale), color="blue", fill = "blue", alpha=0.3, size=1) +
+  geom_area(aes(x = Depth, y = logScale/1e6), color="blue", fill = "blue", alpha=0.3, size=1) +
   scale_x_continuous(expand = c(0,0), limits = c(25,400)) +
-  scale_y_continuous(expand = c(0,0), limits = c(0,8.5e6)) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,8.5)) +
   theme_bw() +
   ylab("kmer Counts") +
   xlab("kmer Depth") +
@@ -85,7 +85,7 @@ lobos_af = read_delim("Lobosporangium_transversale_NRRL_3116.snp_stats.tsv", del
 hapl_af_pane = ggplot(data = lobos_af) +
   geom_density(aes(x=p), fill="red", alpha=0.4, color= "red", size =1) +
   scale_x_continuous(expand = c(0,0), limits = c(0,1)) +
-  scale_y_continuous(expand = c(0,0), limits = c(0,30)) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,35)) +
   xlab("Reference Allele Frequency") +
   ylab("Density") +
   theme_bw() +
