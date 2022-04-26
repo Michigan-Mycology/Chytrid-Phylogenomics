@@ -248,9 +248,12 @@ names(old_to_new) = isolates$LTP
 tree = tublerone::phylo_root(tree, outgroup = c("Capsaspora_owczarzaki_ATCC_30864.v2", "Drosophila_melanogaster.v6", "Monosiga_brevicolis_MX1.v1"))
 tree$tip.label
 plt_tree = ggtree(tree, open.angle = 0.15) %>%
-  ggtree::rotate(node = 145) %>%
+
   ggtree::rotate(node = 144) %>%
-  ggtree::rotate(node = 234)
+  ggtree::rotate(node = 234) %>%
+  ggtree::rotate(node = 225) %>%
+  ggtree::rotate(node = 146) %>%
+  ggtree::rotate(node = 228)
 plt_tree = plt_tree +
   geom_tiplab(size =2, color = 'black') +
   geom_text(aes(x=x, y=y, label=node), color='red')
@@ -273,10 +276,12 @@ tree_data = as_tibble(plt_tree$data$label) %>%
 
 #%%
 ######
-final = ggtree(tree, layout = "fan", size = 0.50, open.angle = 80)  %>%
-  ggtree::rotate(node = 145) %>%
+final = ggtree(tree, layout = "fan", size = 0.50, open.angle = 90)  %>%
   ggtree::rotate(node = 144) %>%
-  ggtree::rotate(node = 234)
+  ggtree::rotate(node = 234) %>%
+  ggtree::rotate(node = 225) %>%
+  ggtree::rotate(node = 146) %>%
+  ggtree::rotate(node = 228)
   #collapse(node=235) %>%
   #collapse(node=247) %>%
   #collapse(node=273) #%>%
@@ -284,15 +289,15 @@ final = ggtree(tree, layout = "fan", size = 0.50, open.angle = 80)  %>%
 final = final %<+% tree_data
 
 final = final +
-  geom_highlight(node = 155, extend =2000, alpha =0.1, fill = "#D4F4FF", color = "white", lwd = 2) + #chytrid
-  geom_highlight(node = 148, extend =2000, alpha =0.1, fill = "#D8D6EC", color = "white", lwd = 2) + #neos
-  geom_highlight(node = 266, extend =2000, alpha =0.1, fill = "#D8D6EC", color = "white", lwd = 2) + #blastos
+  geom_highlight(node = 155, extend =2000, alpha =1, fill = "#D4F4FF", color = "white", lwd = 1.5) + #chytrid
+  geom_highlight(node = 148, extend =2000, alpha =1, fill = "#D8D6EC", color = "white", lwd = 1.5) + #neos
+  geom_highlight(node = 266, extend =2000, alpha =1, fill = "#D8D6EC", color = "white", lwd = 1.5) + #blastos
   #geom_highlight(node = 127, extend =2000, alpha =0.1, fill = "#D8D6EC", color = "black") + #olpidium
-  geom_highlight(node = 256, extend =2000, alpha =0.1, fill = "#D8D6EC", color = "white", lwd = 2) + #zoopags
-  geom_highlight(node = 229, extend =2000, alpha =0.1, fill = "#D8D6EC", color = "white", lwd = 2) + #dikarya
+  geom_highlight(node = 256, extend =2000, alpha =1, fill = "#D8D6EC", color = "white", lwd = 1.5) + #zoopags
+  geom_highlight(node = 229, extend =2000, alpha =1, fill = "#D8D6EC", color = "white", lwd = 1.5) + #dikarya
   #geom_highlight(node = 7, extend =2000, alpha =0.1, fill = "#D8D6EC", color = "black") + #paraphelidium
-  geom_highlight(node = 241, extend =2000, alpha =0.1, fill = "#D8D6EC", color = "white", lwd = 2) + #Rozellomycota and Microsporidia
-  geom_highlight(node = 141, extend =2000, alpha =0.1, fill = "#D8D6EC", color = "white", lwd = 2)  #mucoro
+  geom_highlight(node = 241, extend =2000, alpha =1, fill = "#D8D6EC", color = "white", lwd = 1.5) + #Rozellomycota and Microsporidia
+  geom_highlight(node = 141, extend =2000, alpha =1, fill = "#D8D6EC", color = "white", lwd = 1.5)  #mucoro
 #final = final +
 #  geom_text2(aes(subset=(node == 229)), cex=8, label=intToUtf8(9668), hjust =.2,vjust=.45, color = "black") +
 #  geom_text2(aes(subset=(node == 145)), label = "Dikarya", cex=3.0, vjust=0.4, hjust = -0.5, color = "black") +
@@ -362,7 +367,8 @@ fruitdata1 = fruitdata1 %>%
 ploidy_df = read_delim(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Phylo_Traits.tsv"), delim="\t") %>%
   select(SPECIES.TREE.LABEL, coding, known_diploid_mitosis, UM_ploidy) %>%
   rename(ploidy = coding) %>%
-  mutate(ploidy= ifelse(ploidy == 1, "haploid", "diploid"))
+  mutate(ploidy= ifelse(ploidy == 1 & UM_ploidy == 1, "haploid", ploidy)) %>%
+  mutate(ploidy= ifelse(ploidy == 2 & UM_ploidy == 1, "diploid", ploidy))
 
 l50_genome_sizes = read_delim(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Phylo_Traits.tsv"), delim="\t") %>%
   select(SPECIES.TREE.LABEL, l50_assembly_length)
@@ -376,7 +382,9 @@ snp_densities = read_delim(file.path(CHYTRID_PHYLO, "figures/1_tree", "all.snp_c
   left_join(l50_genome_sizes) %>%
   select(SPECIES.TREE.LABEL, num_snps, l50_assembly_length) %>%
   mutate(snp_density = num_snps/l50_assembly_length) %>%
-  left_join(ploidy_df %>% select(SPECIES.TREE.LABEL, ploidy)) %>%
+  full_join(ploidy_df %>% select(SPECIES.TREE.LABEL, ploidy, UM_ploidy)) %>%
+  mutate(ploidy = ifelse(UM_ploidy == 0, paste("not_our_",ploidy,sep =""), ploidy)) %>%
+  mutate(snp_density = ifelse(UM_ploidy == 0, 0, snp_density)) %>%
   rename(ID = SPECIES.TREE.LABEL)
 
 fig2 = final +
@@ -396,7 +404,7 @@ fig2 = final +
              color = "black",
              offset = 0.05,
              size = 0.5,
-             pwidth = 0.2,
+             pwidth = 0.15,
              alpha = 1.0) +
   geom_fruit(data = character_sheet_long %>% filter(char %in% c("E2F_Ancestral", "Rb_Ancestral", "SBF_Fungal", "Whi5_Fungal")),
              geom = geom_tile,
@@ -407,6 +415,10 @@ fig2 = final +
              size = 0.5,
              pwidth = 0.2,
              alpha = 1.0) +
+  scale_fill_manual(values = unipal_reduced) +
+  guides(fill = "none") +
+  ggnewscale::new_scale_fill() +
+  scale_fill_manual(values = c("white", "mediumseagreen")) +
   geom_fruit(data = cellwall_occ,
              geom = geom_tile,
              mapping = aes(y= ID, x = gene, fill = present),
@@ -414,20 +426,20 @@ fig2 = final +
              color = "black",
              offset = 0.05,
              size = 0.5,
-             pwidth = 0.2,
+             pwidth = 0.3,
              alpha = 1.0) +
-  scale_fill_manual(values = unipal_reduced) +
   guides(fill = "none") +
   ggnewscale::new_scale_fill() +
-  scale_color_manual(values =c('blue', 'red')) +
-  scale_fill_manual(values =c('lightskyblue', 'firebrick1')) +
+  scale_color_manual(values =c('blue', 'red', muted("blue"), muted("red"), "yellow", "gold")) +
+  scale_fill_manual(values =c('lightskyblue', 'firebrick1', "white", "white", "white", "white")) +
   geom_fruit(data = snp_densities, geom = geom_bar,
-             mapping = aes(y = ID, x = sqrt(num_snps), color = ploidy, fill = ploidy),
+             mapping = aes(y = ID, x = sqrt(snp_density), color = ploidy, fill = ploidy),
              offset = 0.05,
              stat = "identity",
              pwidth = 0.65,
-             orientation = "y") +
-  guides(color="none", fill = "none") +
+             orientation = "y",
+             axis.params = list(axis = "x")) +
+  #guides(color="none", fill = "none") +
   theme(
     axis.text = element_blank(),
     axis.line.x = element_blank()
@@ -454,11 +466,19 @@ geom_fruit(data = character_sheet_long %>% filter(!char == "Mode (M)"),
            alpha = 1.0)
 
 
+tester = final +geom_fruit(data = snp_densities, geom = geom_bar,
+             mapping = aes(y = ID, x = sqrt(num_snps), color = ploidy, fill = ploidy),
+             offset = 0.05,
+             stat = "identity",
+             pwidth = 0.65,
+             orientation = "y") +
+  geom_tiplab(size=2.0)
+  #guides(color="none", fill = "none")
 
 
 ggsave(
-  filename = file.path(CHYTRID_PHYLO, "figures_pnas_revisions/2_character_states", "CharStates_Fig_2_021722_withPloidy_snpDense.pdf"),
-  plot = fig2_ploidy,
+  filename = file.path(CHYTRID_PHYLO, "figures_pnas_revisions/2_character_states", "ploidy_test.pdf"),
+  plot = tester,
   device=cairo_pdf,
   width = 8.5,
   height = 11,

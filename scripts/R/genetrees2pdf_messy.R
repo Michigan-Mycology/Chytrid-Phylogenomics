@@ -8,12 +8,12 @@ library(magrittr)
 library(RColorBrewer)
 
 
-isolates = read_xlsx("/home/amsesk/data/pursuit/more_hmm/fasttree/../../Pursuit_Isolates.xlsx") %>%
+isolates = read_xlsx("/home/amsesk/data/pursuit/more_hmm/../Pursuit_Isolates.xlsx") %>%
   select(SPECIES.TREE.LABEL, TAX.GROUP, LTP)
 
 ##### Batch print annotated trees #####
 raw_path = "~/DATA/phylogeny/round1_raw/fast_gene_trees_renamed/"
-filt_path = "/home/amsesk/data/pursuit/more_hmm/filt/fasttree_renamed/"
+filt_path = "/home/amsesk/data/pursuit/more_hmm/ags_best_seqoverlap25/fasttree_renamed/"
 
 path = filt_path
 
@@ -35,7 +35,7 @@ scores = read_delim("/home/amsesk/data/pursuit/more_hmm/raw/unaln/hit_report_all
 #scores %<>%
 #  mutate(TAX.GROUP = as.character(TAX.GROUP))
 
-setwd("/home/amsesk/data/pursuit/more_hmm/filt/fasttree_renamed/pdf")
+setwd("/home/amsesk/data/pursuit/more_hmm/ags_best_seqoverlap25/fasttree_renamed/")
 for (f in files) {
   print(f)
   tree = read.newick( paste(path, f, sep="/") )
