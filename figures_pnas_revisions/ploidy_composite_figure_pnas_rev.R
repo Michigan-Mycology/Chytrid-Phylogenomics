@@ -36,11 +36,13 @@ rambr = read_delim("Ramicandelaber_brevisporus_CBS_109374.Rambr1.v1_23.khist", d
   rename(Depth = `#Depth`)
 spipal = read_delim("Spizellomyces_sp._palustris_CBS455.65_23.khist", delim="\t") %>%
   rename(Depth = `#Depth`)
+mixos = read_delim("Mixia_osmundae_23.khist", delim="\t") %>%
+  rename(Depth = `#Depth`)
 
-hapl_kmer_pane = ggplot(rambr) +
-  geom_area(data=spipal, aes(x = Depth, y = logScale), color="red", fill="red", alpha=0.3, size=1) +
-  scale_x_continuous(expand = c(0,0), limits = c(25,400)) +
-  scale_y_continuous(expand = c(0,0), limits = c(0,8.5e6)) +
+hapl_kmer_pane = ggplot(mixos) +
+  geom_area(aes(x = Depth, y = logScale), color="red", fill="red", alpha=0.3, size=1) +
+  scale_x_continuous(expand = c(0,0), limits = c(0,8e3)) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,1e6)) +
   theme_bw() +
   ylab("kmer Counts") +
   xlab("kmer Depth") +
@@ -52,7 +54,7 @@ hapl_kmer_pane = ggplot(rambr) +
     plot.margin = unit(c(0,0,0,0), "cm"),
     panel.grid = element_blank()
   )
-
+hapl_kmer_pane
 #### Diploid Kmer pane ####
 setwd(file.path(PATH_PREFIX, "kmerhist"))
 rambr = read_delim("Ramicandelaber_brevisporus_CBS_109374.Rambr1.v1_23.khist", delim="\t") %>%
@@ -78,13 +80,12 @@ dipl_kmer_pane = ggplot(rambr) +
 
 #### Haploid AF pane ####
 setwd(file.path(PATH_PREFIX, "snp_stats"))
-cali_af = read_delim("California_12.snp_stats.tsv", delim="\t")
-spipal_af = read_delim("Spizellomyces_sp._palustris_CBS455.65.snp_stats.tsv", delim="\t")
+lobos_af = read_delim("Lobosporangium_transversale_NRRL_3116.snp_stats.tsv", delim="\t")
 
-hapl_af_pane = ggplot(cali_af) +
-  geom_density(data=spipal_af, aes(x=p), fill="red", alpha=0.4, color= "red", size =1) +
+hapl_af_pane = ggplot(data = lobos_af) +
+  geom_density(aes(x=p), fill="red", alpha=0.4, color= "red", size =1) +
   scale_x_continuous(expand = c(0,0), limits = c(0,1)) +
-  scale_y_continuous(expand = c(0,0), limits = c(0,8)) +
+  scale_y_continuous(expand = c(0,0), limits = c(0,30)) +
   xlab("Reference Allele Frequency") +
   ylab("Density") +
   theme_bw() +
@@ -96,7 +97,7 @@ hapl_af_pane = ggplot(cali_af) +
     plot.margin = unit(c(0,0,0,0), "cm"),
     panel.grid = element_blank()
   )
-
+hapl_af_pane
 #### Diploid AF pane ####
 setwd(file.path(PATH_PREFIX, "snp_stats"))
 cali_af = read_delim("California_12.snp_stats.tsv", delim="\t")
