@@ -3,7 +3,9 @@ library(tidyverse)
 library(phytools)
 library(ggtree)
 
-isolates = read_delim(file.path("~/data/pnas_rev/Pursuit_Phylo_Traits.tsv"), delim = "\t") %>%
+CHYTRID_PHYLO = "/home/amsesk/dev/Chytrid-Phylogenomics/"
+
+isolates = read_delim(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Phylo_Traits.tsv"), delim = "\t") %>%
   select(SPECIES.TREE.LABEL, coding) %>%
   rename(ploidy = coding) %>%
   mutate(ploidy = as.character(ploidy)) %>%
@@ -69,12 +71,12 @@ max_par_probs = as_tibble(max_par_probs) %>%
   mutate(node = seq(1, ntips+nnodes, 1)) %>%
   rename("state" = value) %>%
   select(node, everything()) %>%
-  filter(node > ntips) %>%
-  mutate(state = as.factor(state))
+  filter(node > ntips)
 
 plt_ploidy_tree$data = plt_ploidy_tree$data %>%
   left_join(max_par_probs) %>%
-  mutate(state = ifelse(isTip, ploidy, state))
+  mutate(state = ifelse(isTip, ploidy, state)) %>%
+  mutate(state = as.factor(state))
 
 plt_ploidy_tree = plt_ploidy_tree +
   geom_tiplab(size = 2.0, align = T, offset =150) +
@@ -126,7 +128,9 @@ d2h
 plt_ploidy_tree = ggtree(ploidy_tree) %<+% isolates
 plt_ploidy_tree$data = plt_ploidy_tree$data %>%
   left_join(max_par_probs) %>%
-  left_join(edgecol)
+  left_join(edgecol) %>%
+  mutate(state_change = as.factor(state_change)) %>%
+  mutate(state = as.factor(state))
 plt_ploidy_tree = plt_ploidy_tree +
   geom_tiplab(aes(color = state_change), size = 2.0, align = T, offset =150) +
   geom_point(data = subset(plt_ploidy_tree$data, !isTip), aes(x=x, y=y, fill = state), pch=21, color= "black") +
@@ -138,8 +142,9 @@ plt_ploidy_tree = plt_ploidy_tree +
   scale_color_manual(values = c("blueviolet", "hotpink", "black"), na.value = "grey")
 
 plt_ploidy_tree = plt_ploidy_tree + aes(color = state_change)
+plt_ploidy_tree
 
-ggsave(filename = "/Users/aimzez/dev/Chytrid-Phylogenomics/figures_pnas_revisions/parsimony_acr/ploidy_parsimony_acr_pie_tree_WBS-True-Decide_Colored.pdf",
+ggsave(filename = file.path(CHYTRID_PHYLO, "figures_pnas_revisions/parsimony_asr/ploidy_parsimony_acr_pie_tree_WBS-True-Decide_Colored.pdf"),
        plot = plt_ploidy_tree,
        device = "pdf",
        width = 8.5,
