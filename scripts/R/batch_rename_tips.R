@@ -4,7 +4,7 @@ library(readxl)
 
 nametips = function(lab, isolates) {
   spl = strsplit(lab, split="[|]")
-  new = isolates %>% 
+  new = isolates %>%
     filter(LTP == spl[[1]][1]) %>%
     select (SPECIES.TREE.LABEL) %>%
     .$SPECIES.TREE.LABEL
@@ -28,5 +28,5 @@ names(flist) = unlist(markers)
 for (f in flist) {
   t = read.newick(f)
   t$tip.label = sapply(as.list(t$tip.label), nametips, isolates = isolates)
-  write.tree(t, file = gsub(".aa.tre", ".aa.tre.renamed", f))
+  write.tree(t, file = gsub("[.]tre", ".tre.renamed", f))
 }
