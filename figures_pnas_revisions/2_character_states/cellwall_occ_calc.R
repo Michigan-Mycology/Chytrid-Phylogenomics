@@ -1,7 +1,7 @@
 library(tidyverse)
 library(phytools)
 
-setwd("/home/amsesk/data/pursuit/more_hmm/final_gene_trees/")
+setwd("/home/aimzez/DATA/pursuit/more_hmm/final_gene_trees/")
 
 concat_tree = read.newick(file.path(CHYTRID_PHYLO, "figures/1_tree", "combined_tree_filtered_support_RENAMED.tre"))
 

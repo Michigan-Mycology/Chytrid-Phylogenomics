@@ -306,6 +306,7 @@ final = final +
   #geom_highlight(node = 155, extend=this_extend-250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) + #chytrid
 
   #Chytrid orders
+  geom_cladelabel2(node = 155, label = "Chytrids") +
   geom_highlight(node = 178, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) + #Spizellomycetales
   geom_highlight(node = 176, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) + #Rhizophlyctidales
   geom_highlight(node = 32, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) + #incertae sedis
@@ -316,7 +317,7 @@ final = final +
   geom_highlight(node = 83, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) +#incertae sedis
   geom_highlight(node = 219, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) +#Cladochytriales
   geom_highlight(node = 224, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) +#Synchytriales
-  geom_highlight(node = 84, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) +#Caulochytriales
+  geom_highlight(node = 84, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) #Caulochytriales
 
 
 #final = final +

@@ -9,6 +9,7 @@ library(plotrix)
 library(patchwork)
 
 PATH_PREFIX = "/scratch/amsesk/pursuit/ploidy/"
+PATH_PREFIX = "~/DATA/pursuit/ploidy_final"
 SHEET_NAME = "../Pursuit_Isolates.xlsx"
 
 weighted.sd = function(values, weights) {
@@ -184,12 +185,15 @@ ggsave(filename = "~/dev/Chytrid-Phylogenomics/figures_pnas_revisions/3_ploidy/3
        unit = "in")
 
 #### Second split of original ploidy figure ####
+
+PATH_PREFIX = "~/DATA"
 #### Tree pane ####
-isolates = read_delim(file.path(PATH_PREFIX, "Pursuit_Phylo_Traits.tsv"), delim = "\t") %>%
+#isolates = read_delim(file.path(PATH_PREFIX, "Pursuit_Phylo_Traits.tsv"), delim = "\t") %>%
+isolates = read_delim(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Phylo_Traits.tsv"), delim = "\t") %>%
   select(SPECIES.TREE.LABEL, coding) %>%
   rename(ploidy = coding)
 
-ploidy_tree = read.newick(file.path(PATH_PREFIX, "../combined_tree_filtered_support_RENAMED.tre"))
+ploidy_tree = read.newick(file.path(CHYTRID_PHYLO, "figures/1_tree", "combined_tree_filtered_support_RENAMED.tre"))
 
 plt_ploidy_tree = ggtree(ploidy_tree, layout = "circular") %<+% isolates
 
@@ -265,6 +269,17 @@ states = plt_ploidy_tree$data %>%
   select(label, isTip, ploidy) %>%
   filter(isTip) %>%
   select(-isTip) %>%
+  mutate(ploidy = as.character(ploidy)) %>%
+  mutate(ploidy = factor(ploidy, levels=c("1", "2")))
+states_lst = states$ploidy
+names(states_lst) = states$label
+
+# Armillaria haploid
+states = plt_ploidy_tree$data %>%
+  select(label, isTip, ploidy) %>%
+  filter(isTip) %>%
+  select(-isTip) %>%
+  mutate(ploidy = ifelse(label == "Armillaria_ostoyae_C18_9", 1, ploidy)) %>%
   mutate(ploidy = as.character(ploidy)) %>%
   mutate(ploidy = factor(ploidy, levels=c("1", "2")))
 states_lst = states$ploidy
