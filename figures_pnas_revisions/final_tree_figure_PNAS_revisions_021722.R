@@ -289,18 +289,18 @@ final = ggtree(tree, layout = "fan", size = 0.50, open.angle = 90)  %>%
 final = final %<+% tree_data
 
 this_alpha = 1.0
-this_extend = 2500
+this_extend = 2250
 final = final +
-  geom_highlight(node = 155, extend=this_extend, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 1.5) + #chytrid
-  geom_highlight(node = 149, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.5) + #neos
-  geom_highlight(node = 153, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.5) + #monoblephs
-  geom_highlight(node = 266, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.5) + #blastos
+  geom_highlight(node = 155, extend=this_extend, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 1.0) + #chytrid
+  geom_highlight(node = 149, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0) + #neos
+  geom_highlight(node = 153, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0) + #monoblephs
+  geom_highlight(node = 266, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0) + #blastos
   #geom_highlight(node = 127, extend=this_extend, alpha =0.1, fill = "#D8D6EC", color = "black") + #olpidium
-  geom_highlight(node = 256, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.5) + #zoopags
-  geom_highlight(node = 229, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.5) + #dikarya
+  geom_highlight(node = 256, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0) + #zoopags
+  geom_highlight(node = 229, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0) + #dikarya
   #geom_highlight(node = 7, extend=this_extend, alpha =0.1, fill = "#D8D6EC", color = "black") + #paraphelidium
-  geom_highlight(node = 241, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.5) + #Rozellomycota and Microsporidia
-  geom_highlight(node = 141, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.5)  #mucoro
+  geom_highlight(node = 241, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0) + #Rozellomycota and Microsporidia
+  geom_highlight(node = 141, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0)  #mucoro
 #final = final +
 #  geom_text2(aes(subset=(node == 229)), cex=8, label=intToUtf8(9668), hjust =.2,vjust=.45, color = "black") +
 #  geom_text2(aes(subset=(node == 145)), label = "Dikarya", cex=3.0, vjust=0.4, hjust = -0.5, color = "black") +
@@ -389,7 +389,7 @@ snp_densities = read_delim(file.path(CHYTRID_PHYLO, "figures/1_tree", "all.snp_c
   mutate(ploidy = ifelse(UM_ploidy == 0, paste("not_our_",ploidy,sep =""), ploidy)) %>%
   mutate(snp_density = ifelse(UM_ploidy == 0, 0, snp_density)) %>%
   mutate(ploidy = factor(ploidy, levels = c("diploid",
-                                            "haploid"
+                                            "haploid",
                                             "?",
                                             "not_our_2",
                                             "not_our_1",
@@ -448,7 +448,7 @@ fig2 = final +
              pwidth = 0.65,
              orientation = "y",
              axis.params = list(axis = "x")) +
-  #guides(color="none", fill = "none") +
+  guides(color="none", fill = "none") +
   theme(
     axis.text = element_blank(),
     axis.line.x = element_blank()
