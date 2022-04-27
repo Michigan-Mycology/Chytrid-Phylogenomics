@@ -94,6 +94,8 @@ ggsave(filename = "/Users/aimzez/dev/Chytrid-Phylogenomics/figures_pnas_revision
        height = 11,
        unit = "in")
 
+#meh
+
 ### Color the edge according to the direction of ploidy transition
 iter = seq(1,dim(ploidy_tree$edge)[1],1)
 h2d = 0
