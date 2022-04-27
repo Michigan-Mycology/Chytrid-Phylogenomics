@@ -309,8 +309,8 @@ p = ggtree(ploidy_tree) %<+% isolates +
   geom_tiplab(size = 2.5, align = T, offset = 100, linesize=0.1, linetype="dashed") +
   xlim(0,1750) +
   geom_tippoint(aes(x=x+50, fill = ploidy), pch=21, size =2 ) +
-  scale_fill_manual(values=colpal) #+
-  #geom_text(aes(label=node), color = "red")
+  scale_fill_manual(values=colpal) +
+  geom_text(aes(label=node), color = "red")
 
 pies = nodepie(anc_states_final, cols=2:3, color = c("red", "blue"))
 pies_on_tree = inset(p, pies, width =0.08, height =0.08)
