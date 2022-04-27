@@ -10,6 +10,7 @@ library(tublerone)
 library(ggtreeExtra)
 
 CHYTRID_PHYLO="/home/amsesk/dev/Chytrid-Phylogenomics"
+CHYTRID_PHYLO="/home/aimzez/work/Chytrid-Phylogenomics"
 
 #### Tree ####
 tree = read.newick(file.path(CHYTRID_PHYLO, "figures/1_tree", "combined_tree_filtered_support_RENAMED.tre"))
@@ -237,7 +238,7 @@ ggsave(
 ################################################
 
 #### Tree ####
-isolates = read_xlsx("~/data/pursuit/Pursuit_Isolates.xlsx")
+isolates = read_xlsx(file.path(CHYTRID_PHYLO, "spreadsheets", "Pursuit_Isolates.xlsx"))
 
 tree = read.newick(file.path(CHYTRID_PHYLO, "figures/1_tree", "combined_tree_filtered_support_RENAMED.tre"))
 
@@ -291,7 +292,6 @@ final = final %<+% tree_data
 this_alpha = 1.0
 this_extend = 2250
 final = final +
-  geom_highlight(node = 155, extend=this_extend-250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) + #chytrid
   geom_highlight(node = 149, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) + #neos
   geom_highlight(node = 153, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) + #monoblephs
   geom_highlight(node = 266, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) + #blastos
@@ -300,7 +300,25 @@ final = final +
   geom_highlight(node = 229, extend=this_extend-500, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) + #dikarya
   geom_highlight(node = 7, extend=this_extend, alpha =this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) + #paraphelidium
   geom_highlight(node = 241, extend=this_extend-500, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) + #Mucoromycota
-  geom_highlight(node = 141, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5)  #Rozellomycota and Microsporidia
+  geom_highlight(node = 141, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) +  #Rozellomycota and Microsporidia
+
+  # All chytrids
+  #geom_highlight(node = 155, extend=this_extend-250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) + #chytrid
+
+  #Chytrid orders
+  geom_highlight(node = 178, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) + #Spizellomycetales
+  geom_highlight(node = 176, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) + #Rhizophlyctidales
+  geom_highlight(node = 32, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) + #incertae sedis
+  geom_highlight(node = 159, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) + #Rhizophydiales
+  geom_highlight(node = 193, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) + #Chytridiales
+  geom_highlight(node = 77, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) + #Polychytriales
+  geom_highlight(node = 222, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) + #Lobulomycetales
+  geom_highlight(node = 83, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) +#incertae sedis
+  geom_highlight(node = 219, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) +#Cladochytriales
+  geom_highlight(node = 224, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) +#Synchytriales
+  geom_highlight(node = 84, extend=this_extend+250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) +#Caulochytriales
+
+
 #final = final +
 #  geom_text2(aes(subset=(node == 229)), cex=8, label=intToUtf8(9668), hjust =.2,vjust=.45, color = "black") +
 #  geom_text2(aes(subset=(node == 145)), label = "Dikarya", cex=3.0, vjust=0.4, hjust = -0.5, color = "black") +
