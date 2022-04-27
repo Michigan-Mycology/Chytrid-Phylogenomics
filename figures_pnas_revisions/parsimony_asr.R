@@ -136,10 +136,11 @@ plt_ploidy_tree = plt_ploidy_tree +
   geom_point(data = subset(plt_ploidy_tree$data, !isTip), aes(x=x, y=y, fill = state), pch=21, color= "black") +
   geom_point(data = subset(plt_ploidy_tree$data, isTip), aes(x=x, y=y, fill = ploidy), pch=21, color= "black") +
   scale_fill_manual(values=c('red', 'blue'), na.value='grey') +
-  scale_x_continuous(limits = c(0,2000),
+  scale_x_continuous(limits = c(-100,2000),
                      expand=c(0,0)) +
   scale_y_continuous(expand=c(0, 0.6)) +
-  scale_color_manual(values = c("blueviolet", "hotpink", "black"), na.value = "grey")
+  scale_color_manual(values = c("blueviolet", "hotpink", "black"), na.value = "grey") +
+  guides(fill = "none", color = "none")
 
 plt_ploidy_tree = plt_ploidy_tree + aes(color = state_change)
 plt_ploidy_tree
