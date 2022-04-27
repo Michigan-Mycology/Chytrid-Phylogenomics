@@ -291,16 +291,16 @@ final = final %<+% tree_data
 this_alpha = 1.0
 this_extend = 2250
 final = final +
-  geom_highlight(node = 155, extend=this_extend-250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 1.0) + #chytrid
-  geom_highlight(node = 149, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0) + #neos
-  geom_highlight(node = 153, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0) + #monoblephs
-  geom_highlight(node = 266, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0) + #blastos
-  geom_highlight(node = 127, extend=this_extend, alpha =this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0) + #olpidium
-  geom_highlight(node = 256, extend=this_extend-250, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0) + #zoopags
-  geom_highlight(node = 229, extend=this_extend-500, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0) + #dikarya
-  geom_highlight(node = 7, extend=this_extend, alpha =this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0) + #paraphelidium
-  geom_highlight(node = 241, extend=this_extend-500, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0) + #Mucoromycota
-  geom_highlight(node = 141, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 1.0)  #Rozellomycota and Microsporidia
+  geom_highlight(node = 155, extend=this_extend-250, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 0.5) + #chytrid
+  geom_highlight(node = 149, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) + #neos
+  geom_highlight(node = 153, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) + #monoblephs
+  geom_highlight(node = 266, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) + #blastos
+  geom_highlight(node = 127, extend=this_extend, alpha =this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) + #olpidium
+  geom_highlight(node = 256, extend=this_extend-250, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) + #zoopags
+  geom_highlight(node = 229, extend=this_extend-500, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) + #dikarya
+  geom_highlight(node = 7, extend=this_extend, alpha =this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) + #paraphelidium
+  geom_highlight(node = 241, extend=this_extend-500, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5) + #Mucoromycota
+  geom_highlight(node = 141, extend=this_extend, alpha=this_alpha, fill = "#D8D6EC", color = "white", lwd = 0.5)  #Rozellomycota and Microsporidia
 #final = final +
 #  geom_text2(aes(subset=(node == 229)), cex=8, label=intToUtf8(9668), hjust =.2,vjust=.45, color = "black") +
 #  geom_text2(aes(subset=(node == 145)), label = "Dikarya", cex=3.0, vjust=0.4, hjust = -0.5, color = "black") +
