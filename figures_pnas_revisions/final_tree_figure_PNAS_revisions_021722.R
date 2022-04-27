@@ -288,7 +288,7 @@ final = ggtree(tree, layout = "fan", size = 0.50, open.angle = 90)  %>%
   #collapse(node=256)
 final = final %<+% tree_data
 
-this_alpha = 0.4
+this_alpha = 1.0
 this_extend = 2500
 final = final +
   geom_highlight(node = 155, extend=this_extend, alpha=this_alpha, fill = "#D4F4FF", color = "white", lwd = 1.5) + #chytrid
@@ -388,6 +388,12 @@ snp_densities = read_delim(file.path(CHYTRID_PHYLO, "figures/1_tree", "all.snp_c
   full_join(ploidy_df %>% select(SPECIES.TREE.LABEL, ploidy, UM_ploidy)) %>%
   mutate(ploidy = ifelse(UM_ploidy == 0, paste("not_our_",ploidy,sep =""), ploidy)) %>%
   mutate(snp_density = ifelse(UM_ploidy == 0, 0, snp_density)) %>%
+  mutate(ploidy = factor(ploidy, levels = c("diploid",
+                                            "haploid"
+                                            "?",
+                                            "not_our_2",
+                                            "not_our_1",
+                                            "not_our_?"))) %>%
   rename(ID = SPECIES.TREE.LABEL)
 
 fig2 = final +
@@ -433,8 +439,8 @@ fig2 = final +
              alpha = 1.0) +
   guides(fill = "none") +
   ggnewscale::new_scale_fill() +
-  scale_color_manual(values =c('blue', 'red', muted("blue"), muted("red"), "yellow", "gold")) +
-  scale_fill_manual(values =c('lightskyblue', 'firebrick1', "white", "white", "white", "white")) +
+  scale_color_manual(values =c('blue', 'red', '#4f4f4f', muted("blue"), muted("red"), "yellow")) +
+  scale_fill_manual(values =c('lightskyblue', 'tomato', '#d1d1d1', "white", "white", "white")) +
   geom_fruit(data = snp_densities, geom = geom_bar,
              mapping = aes(y = ID, x = sqrt(snp_density), color = ploidy, fill = ploidy),
              offset = 0.05,
