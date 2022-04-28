@@ -279,7 +279,7 @@ states = plt_ploidy_tree$data %>%
   select(label, isTip, ploidy) %>%
   filter(isTip) %>%
   select(-isTip) %>%
-  mutate(ploidy = ifelse(label == "Armillaria_ostoyae_C18_9", 1, ploidy)) %>%
+  #mutate(ploidy = ifelse(label == "Armillaria_ostoyae_C18_9", 1, ploidy)) %>%
   mutate(ploidy = as.character(ploidy)) %>%
   mutate(ploidy = factor(ploidy, levels=c("1", "2")))
 states_lst = states$ploidy
@@ -320,12 +320,18 @@ marginal_tree_pane
 #       device = cairo_pdf)
 
 ### Pies on tree for supplemental
-p = ggtree(ploidy_tree) %<+% isolates +
+p = ggtree(ploidy_tree) %<+% isolates
+
+#Armillaria haploid
+#p$data = p$data %>%
+#  mutate(ploidy = ifelse(label == "Armillaria_ostoyae_C18_9", 1, ploidy))
+
+p = p +
   geom_tiplab(size = 2.5, align = T, offset = 100, linesize=0.1, linetype="dashed") +
   xlim(0,1750) +
   geom_tippoint(aes(x=x+50, fill = ploidy), pch=21, size =2 ) +
-  scale_fill_manual(values=colpal) +
-  geom_text(aes(label=node), color = "red")
+  scale_fill_manual(values=colpal) #+
+  #geom_text(aes(label=node), color = "red")
 
 pies = nodepie(anc_states_final, cols=2:3, color = c("red", "blue"))
 pies_on_tree = inset(p, pies, width =0.08, height =0.08)
@@ -352,7 +358,7 @@ pies_tree_cleaned_tiplabs$data = pies_tree_cleaned_tiplabs$data %>%
   mutate(label = ifelse(genus_species %in% genus_species_duplicates, paste(genus, species, strain), label))
 
 
-ggsave("~/dev/Chytrid-Phylogenomics/figures_pnas_revisions/3_ploidy/suppl_pie_tree_nodenum.pdf",
+ggsave("~/work/Chytrid-Phylogenomics/figures_pnas_revisions/3_ploidy/suppl_pie_tree.pdf",
        plot = pies_tree_cleaned_tiplabs,
        width = 8.5,
        height = 11,
