@@ -275,15 +275,15 @@ states_lst = states$ploidy
 names(states_lst) = states$label
 
 # Armillaria haploid
-states = plt_ploidy_tree$data %>%
-  select(label, isTip, ploidy) %>%
-  filter(isTip) %>%
-  select(-isTip) %>%
+#states = plt_ploidy_tree$data %>%
+  #select(label, isTip, ploidy) %>%
+  #filter(isTip) %>%
+  #select(-isTip) %>%
   #mutate(ploidy = ifelse(label == "Armillaria_ostoyae_C18_9", 1, ploidy)) %>%
-  mutate(ploidy = as.character(ploidy)) %>%
-  mutate(ploidy = factor(ploidy, levels=c("1", "2")))
-states_lst = states$ploidy
-names(states_lst) = states$label
+  #mutate(ploidy = as.character(ploidy)) %>%
+  #mutate(ploidy = factor(ploidy, levels=c("1", "2")))
+#states_lst = states$ploidy
+#names(states_lst) = states$label
 
 fitER = ace(states_lst, ploidy_tree, method = "ML", model="ARD", type="discrete")
 anc_states_probs = as_tibble(fitER$lik.anc)
