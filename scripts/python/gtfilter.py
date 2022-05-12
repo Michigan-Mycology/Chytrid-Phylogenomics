@@ -10,7 +10,12 @@ import sys
 import os
 import argparse
 import pandas as pd
-#os.environ["CHYTRID_PHYLO_PY"] = "/home/aimzez/work/Chytrid-Phylogenomics/scripts/python"
+import itertools
+import copy
+import json
+
+# os.environ["CHYTRID_PHYLO_PY"] =
+# "/home/aimzez/work/Chytrid-Phylogenomics/scripts/python"
 sys.path.append(os.path.join(os.environ.get(
     'CHYTRID_PHYLO'), "scripts", "python"))
 import gtlib
@@ -106,6 +111,88 @@ def taxon_occupancy(all_trees, isolates, outpath):
     summed_renamed.to_csv(os.path.join(
         outpath, "python_isolate_repr.tsv"), sep="\t", index=False)
 
+
+def write_per_marker_quartet_group_monophyletic_clades(all_trees, quartets_path):
+    quartet_groups = {0: [],
+                      1: [],
+                      2: [],
+                      3: [],
+                      }
+    # Read in quartet groups
+    with open(quartets_path, 'r') as qf:
+        for line in qf:
+            spl = [x.strip() for x in line.split("\t")]
+            for i in range(0, 4):
+                if len(spl[i]) > 0:
+                    quartet_groups[i].append(spl[i])
+
+    mono = [0, 0, 0, 0]
+    all_mono = 0
+    per_marker_quartet_group_monophyletic_clades = {}
+    for marker, tree in all_trees.trees.items():
+        per_marker_quartet_group_monophyletic_clades[marker] = {}
+        copy_qg = copy.deepcopy(quartet_groups)
+        # print(copy_qg)
+        mono_log = [True, True, True, True]
+        for i in range(0, 3):
+            per_marker_quartet_group_monophyletic_clades[marker][i] = []
+            res = tree.check_monophyly(
+                copy_qg[i], "isolate", ignore_missing=True, unrooted=True)
+            if res[0]:
+                mono[i] += 1
+                per_marker_quartet_group_monophyletic_clades[
+                    marker][i].append(tuple(quartet_groups[i]))
+            else:
+                p = 1
+                while len(copy_qg[i]) != 0:
+                    for comb in itertools.combinations(
+                            copy_qg[i], len(copy_qg[i]) - p):
+                        #print(len(copy_qg[i]), len(comb), p)
+                        subtract_res = tree.check_monophyly(
+                            comb, "isolate", ignore_missing=True, unrooted=True)
+                        if subtract_res[0]:
+                            # print(marker, i, p, len(comb), len(
+                            #    copy_qg[i]), comb)
+                            per_marker_quartet_group_monophyletic_clades[
+                                marker][i].append(comb)
+                            p -= len(comb) + 1
+                            for c in comb:
+                                copy_qg[i].remove(c)
+                            break
+                    p += 1
+                '''
+                print(list(itertools.combinations(
+                    quartet_groups[i], len(quartet_groups[i]) - 1)))
+                print(quartet_groups[i])
+                print(i, [x.isolate for x in res[2]])
+                print(i, [x.isolate for x in res[2]
+                          if x.isolate in quartet_groups[i]])
+                '''
+                mono_log[i] = False
+        if all(mono_log):
+            all_mono += 1
+
+    with open("per_marker_quartet_group_monophyletic_clades.json", "w") as outfile:
+        json.dump(per_marker_quartet_group_monophyletic_clades, outfile)
+
+    # for marker, qg in per_marker_quartet_group_monophyletic_clades.items():
+    #    for i, clades in qg.items():
+    #        print(marker, i, clades)
+
+    print(mono)
+    print(all_mono)
+
+    return None
+
+
+def quartet_repr(all_trees, quartets_path):
+    with open("per_marker_quartet_group_monophyletic_clades.json", 'r') as openfile:
+        per_marker_quartet_group_monophyletic_clades = json.load(openfile)
+    for marker, qg in per_marker_quartet_group_monophyletic_clades.items():
+        for i, clades in qg.items():
+            print(marker, i, clades)
+
+
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
@@ -122,20 +209,25 @@ if __name__ == "__main__":
                         help="ONLY REQUIRED FOR `taxocc`. Two-column, tab-separated list that has full tree tip label in column 1 and LTP in column 2.")
     parser.add_argument("--remove-remaining-polyphyly", action="store_true", required=False,
                         help="ONLY REQUIRED FOR `filter-phyly`. This flag will remove all unresolved polyphyletic taxa in each marker tree after completion of the filtering pipeline.")
+    parser.add_argument("-q", "--quartets", action="store", required=False,
+                        help="ONLY REQUIRED FOR `quartet-repr`, A four column tab-separated text files that has the tip labels for each quartet in a column.")
+    parser.add_argument("--suffix", action="store", required=False, default=".aa.tre.renamed",
+                        help="Suffix for gene tree files. Default: `.aa.tre.renamed`")
     args = parser.parse_args()
 
     task_cases = ["phylymat", "matcompare",
-                  "filter-phyly", "filter-score", "taxocc"]
+                  "filter-phyly", "filter-score", "taxocc",
+                  "quartet-repr"]
     if args.task not in task_cases:
         print(f"Bad task selection: {args.task}. Pick from {task_cases}.")
         sys.exit(1)
 
     files = [os.path.join(args.genetrees, t) for t in os.listdir(
-        args.genetrees) if t.endswith("renamed")]
-    markers = [os.path.basename(x.replace(".aa.tre.renamed", ""))
+        args.genetrees) if t.endswith(args.suffix)]
+    markers = [os.path.basename(x.replace(args.suffix, ""))
                for x in files]
 
-    all_trees = gtlib.MultiMarkerGeneTrees(files)
+    all_trees = gtlib.MultiMarkerGeneTrees(files, suffix=args.suffix)
 
     if args.task == "phylymat":
         write_monophyly_matrix(all_trees, args.outpath)
@@ -152,6 +244,9 @@ if __name__ == "__main__":
 
     elif args.task == "taxocc":
         taxon_occupancy(all_trees, args.isolates, args.outpath)
+
+    elif args.task == "quartet-repr":
+        quartet_repr(all_trees, args.quartets)
 
     else:
         # Shouldn't happen
