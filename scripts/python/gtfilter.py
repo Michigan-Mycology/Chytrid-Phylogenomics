@@ -217,7 +217,7 @@ if __name__ == "__main__":
 
     task_cases = ["phylymat", "matcompare",
                   "filter-phyly", "filter-score", "taxocc",
-                  "quartet-repr"]
+                  "quartet-repr", "quartet-group-monophyly"]
     if args.task not in task_cases:
         print(f"Bad task selection: {args.task}. Pick from {task_cases}.")
         sys.exit(1)
@@ -247,6 +247,9 @@ if __name__ == "__main__":
 
     elif args.task == "quartet-repr":
         quartet_repr(all_trees, args.quartets)
+    
+    elif args.task == "quartet-group-monophyly":
+        write_per_marker_quartet_group_monophyletic_clades(all_trees, args.quartets)
 
     else:
         # Shouldn't happen
