@@ -18,7 +18,7 @@ import numpy as np
 
 class MultiMarkerGeneTrees(object):
 
-    def __init__(self, tree_paths, rooted = False, suffix=".aa.tre.renamed"):
+    def __init__(self, tree_paths, rooted=False, suffix=".aa.tre.renamed"):
         self.trees = {}
         tree_files = tree_paths
         for t in tree_files:
@@ -37,19 +37,20 @@ class MultiMarkerGeneTrees(object):
                 tip.add_feature("gene", phead)
                 tip.add_feature("genus", tip.name.split("_")[0])
             self.trees[this_marker] = tree
-    
+
     def midpoint_root(self):
-        for m,t in self.trees.items():
+        for m, t in self.trees.items():
             t.set_outgroup(t.get_midpoint_outgroup())
         return None
 
     def outgroup_root(self, outgroup_isolates):
         new_trees = {}
-        for m,t in self.trees.items():
+        for m, t in self.trees.items():
             print(m)
-            outgroup = [x for x in t.get_leaves() if x.isolate in outgroup_isolates]
+            outgroup = [x for x in t.get_leaves(
+            ) if x.isolate in outgroup_isolates]
             if len(outgroup) == 0:
-                new_trees[m] =t
+                new_trees[m] = t
                 continue
             root_node = t.get_common_ancestor(outgroup)
             if root_node is t:
@@ -61,7 +62,6 @@ class MultiMarkerGeneTrees(object):
 
         self.trees = new_trees
         return None
-
 
     def annotate_scores(self, metadata):
         for marker, tree in self.trees.items():

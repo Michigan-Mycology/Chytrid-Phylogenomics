@@ -114,7 +114,7 @@ def taxon_occupancy(all_trees, isolates, outpath):
 
 def write_per_marker_quartet_group_monophyletic_clades(all_trees, quartets_path):
     #outgroup_isolates = ["GCF_000016345.1", "GCF_003065365.1", "GCF_000019745.1", "GCF_003261295.1"]
-    #all_trees.root(outgroup_isolates)
+    # all_trees.root(outgroup_isolates)
     all_trees.midpoint_root()
     quartet_groups = {0: [],
                       1: [],
@@ -138,15 +138,15 @@ def write_per_marker_quartet_group_monophyletic_clades(all_trees, quartets_path)
         # print(copy_qg)
         mono_log = [True, True, True, True]
         for i in range(0, 3):
-            
+
             # Skip quartet group if none of the tips are present in the gene tree
             # ^ Necessary because TreeNode.check_monophyly(ignore_missing = True) will return True
-            # if all tips are missing. 
+            # if all tips are missing.
             if all([x not in [l.isolate for l in tree.get_leaves()] for x in copy_qg[i]]):
-                
+
                 per_marker_quartet_group_monophyletic_clades[marker][i] = None
                 continue
-            
+
             else:
                 per_marker_quartet_group_monophyletic_clades[marker][i] = []
                 res = tree.check_monophyly(
@@ -197,6 +197,7 @@ def write_per_marker_quartet_group_monophyletic_clades(all_trees, quartets_path)
 
     return None
 
+
 def print_nice_quartet_monophyly():
     with open("per_marker_quartet_group_monophyletic_clades.json", 'r') as openfile:
         per_marker_quartet_group_monophyletic_clades = json.load(openfile)
@@ -207,12 +208,12 @@ def print_nice_quartet_monophyly():
 
 def quartet_repr(all_trees, quartets_path):
     qr = {
-    "01": 0,
-    "10": 0,
-    "02": 0,
-    "20": 0,
-    "12": 0,
-    "21": 0 
+        "01": 0,
+        "10": 0,
+        "02": 0,
+        "20": 0,
+        "12": 0,
+        "21": 0
     }
     all_trees.midpoint_root()
     with open("per_marker_quartet_group_monophyletic_clades.json", 'r') as openfile:
@@ -223,19 +224,29 @@ def quartet_repr(all_trees, quartets_path):
         for i, clades in qg.items():
             if clades is not None:
                 if len(clades) == 1:
-                    leaves = [x for x in gt.get_leaves() if x.isolate in clades[0]]
+                    leaves = [x for x in gt.get_leaves() if x.isolate in clades[
+                        0]]
 
-                    assert all([x.is_leaf() for x in leaves]), "You got nonleaves mixed in with your leaves"
-                    #print(marker, i, [x.isolate for x in leaves]) 
-                    quartet_group_nodes[int(i)] = gt.get_common_ancestor(leaves)
-            
-        print(marker, quartet_group_nodes)
+                    assert all([x.is_leaf() for x in leaves]
+                               ), "You got nonleaves mixed in with your leaves"
+                    assert len(leaves) > 0, "0-length list of leaves"
+                    # print(gt)
+                    # print(leaves)
+                    #print(marker, i, [x.isolate for x in leaves])
+                    quartet_group_nodes[
+                        int(i)] = gt.get_common_ancestor(leaves)
+                else:
+                    print(marker, len(clades), clades)
+
+        #print(marker, quartet_group_nodes)
+        # print(quartet_group_nodes)
+        continue
         for qgi, node in quartet_group_nodes.items():
-           if node is not None:
-                compare_to = [0,1,2]
+            if node is not None:
+                compare_to = [0, 1, 2]
                 compare_to.remove(qgi)
                 sis = node.get_sisters()
-                #print(node.get_leaf_names())
+                # print(node.get_leaf_names())
                 if len(sis) == 1:
                     for c in compare_to:
                         if quartet_group_nodes[c] is None:
@@ -263,8 +274,8 @@ def quartet_repr(all_trees, quartets_path):
 
                 else:
                     raise ValueError
-    for k,v in qr.items():
-        print(k,v)
+    for k, v in qr.items():
+        print(k, v)
 
 if __name__ == "__main__":
 
@@ -303,7 +314,8 @@ if __name__ == "__main__":
     markers = [os.path.basename(x.replace(args.suffix, ""))
                for x in files]
 
-    all_trees = gtlib.MultiMarkerGeneTrees(files, suffix=args.suffix, rooted = args.rooted)
+    all_trees = gtlib.MultiMarkerGeneTrees(
+        files, suffix=args.suffix, rooted=args.rooted)
 
     if args.task == "phylymat":
         write_monophyly_matrix(all_trees, args.outpath)
@@ -323,12 +335,13 @@ if __name__ == "__main__":
 
     elif args.task == "quartet-repr":
         quartet_repr(all_trees, args.quartets)
-    
+
     elif args.task == "print-nice-quartet-monophyly":
         print_nice_quartet_monophyly()
 
     elif args.task == "quartet-group-monophyly":
-        write_per_marker_quartet_group_monophyletic_clades(all_trees, args.quartets)
+        write_per_marker_quartet_group_monophyletic_clades(
+            all_trees, args.quartets)
 
     else:
         # Shouldn't happen
