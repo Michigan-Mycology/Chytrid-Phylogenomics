@@ -41,6 +41,7 @@ class MultiMarkerGeneTrees(object):
     def midpoint_root(self):
         for m, t in self.trees.items():
             t.set_outgroup(t.get_midpoint_outgroup())
+            t.unroot()
         return None
 
     def outgroup_root(self, outgroup_isolates):
