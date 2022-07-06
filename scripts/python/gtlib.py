@@ -48,8 +48,9 @@ class MultiMarkerGeneTrees(object):
         new_trees = {}
         for m, t in self.trees.items():
             print(m)
-            outgroup = [x for x in t.get_leaves(
-            ) if x.isolate in outgroup_isolates]
+            outgroup = [
+                x for x in t.get_leaves() if x.isolate in outgroup_isolates
+            ]
             if len(outgroup) == 0:
                 new_trees[m] = t
                 continue
@@ -69,13 +70,17 @@ class MultiMarkerGeneTrees(object):
             sub = metadata[(metadata.marker == marker)].groupby("isolate")
             for isolate, group in sub:
                 for tup in group.itertuples():
-                    leaf = [l for l in tree.get_leaves() if l.gene ==
-                            tup.gene and l.isolate == tup.isolate]
-                    if(len(leaf) == 0):
+                    leaf = [
+                        l for l in tree.get_leaves()
+                        if l.gene == tup.gene and l.isolate == tup.isolate
+                    ]
+                    if (len(leaf) == 0):
                         print(f"Leaf not in tree (this is OK): {tup}")
                         continue
-                    elif(len(leaf) > 1):
-                        print(f"Multiple leafs corresponding to this hit (this not OK): {tup}")
+                    elif (len(leaf) > 1):
+                        print(
+                            f"Multiple leafs corresponding to this hit (this not OK): {tup}"
+                        )
                         sys.exit()
                         continue
                     else:
@@ -90,8 +95,9 @@ class MultiMarkerGeneTrees(object):
             d = {k: v for k, v in zip(u_isolates, [0] * len(u_isolates))}
 
             for i in u_isolates:
-                i_scores = [l.score for l in tree.get_leaves()
-                            if l.isolate == i]
+                i_scores = [
+                    l.score for l in tree.get_leaves() if l.isolate == i
+                ]
                 d[i] = max(i_scores) - min(i_scores)
 
             ddict[marker] = d
@@ -112,6 +118,7 @@ class MultiMarkerGeneTrees(object):
             ddict[marker] = d
 
         return ddict
+
 
 #%%
 
@@ -146,8 +153,9 @@ def filter_pipeline(trees, outdir, remove_remaining_polyphyletic_taxa=False):
                 bool_within_30p = [x >= max(i_scores) * 0.70 for x in i_scores]
                 if all(bool_within_30p):
 
-                    b, r, _ = tree.check_monophyly(
-                        [i], "isolate", unrooted=True)
+                    b, r, _ = tree.check_monophyly([i],
+                                                   "isolate",
+                                                   unrooted=True)
                     if b:
                         filtered_d[i] = [high_name]
                         continue
@@ -176,8 +184,9 @@ def filter_pipeline(trees, outdir, remove_remaining_polyphyletic_taxa=False):
                         tree_copy.get_leaves_by_name(low_name)[0].delete()
                         # print(f"One tip with low score, {low_name}. Deleting
                         # it and reasking monophyly.")
-                        b, r, _ = tree_copy.check_monophyly(
-                            [i], "isolate", unrooted=True)
+                        b, r, _ = tree_copy.check_monophyly([i],
+                                                            "isolate",
+                                                            unrooted=True)
 
                         if b:
                             # print(f"{i} is monophyletic now. Let's take the
@@ -217,19 +226,24 @@ def filter_pipeline(trees, outdir, remove_remaining_polyphyletic_taxa=False):
                             continue
 
                         else:  # There are multiple high hits. Drop all lows and reask monophyly. If yes, take highest. If no, look @ gene tree.
-                            high_indices = [i for i in range(
-                                0, len(i_scores)) if bool_within_30p[i]]
+                            high_indices = [
+                                i for i in range(0, len(i_scores))
+                                if bool_within_30p[i]
+                            ]
                             high_names = [i_names[i] for i in high_indices]
 
-                            low_indices = [i for i in range(
-                                0, len(i_scores)) if not bool_within_30p[i]]
+                            low_indices = [
+                                i for i in range(0, len(i_scores))
+                                if not bool_within_30p[i]
+                            ]
                             low_names = [i_names[i] for i in low_indices]
                             tree_copy = tree.copy()
                             for leaf in low_names:
                                 tree_copy.get_leaves_by_name(leaf)[0].delete()
 
-                            b, r, _ = tree_copy.check_monophyly(
-                                [i], "isolate", unrooted=True)
+                            b, r, _ = tree_copy.check_monophyly([i],
+                                                                "isolate",
+                                                                unrooted=True)
 
                             if b:
                                 # print(f"{i} is monophyletic now. Let's take
@@ -262,10 +276,12 @@ def filter_pipeline(trees, outdir, remove_remaining_polyphyletic_taxa=False):
 
         with open(os.path.join(outdir, f"{marker}.toget"), 'w') as out:
             for key, values in filtered_d.items():
-                 #print(key, values)
+                #print(key, values)
                 out.write("\n".join([x.split("&")[1] for x in values]))
                 out.write("\n")
     return filtered_d
+
+
 #%%
 
 
@@ -276,7 +292,10 @@ def final_score_filter(trees, outpath):
         std = np.std(scores)
 
         tree_copy = tree.copy()
-        for leaf in [x.name for x in tree.get_leaves() if x.score <= mean - (std * 1.5)]:
+        for leaf in [
+                x.name for x in tree.get_leaves()
+                if x.score <= mean - (std * 1.5)
+        ]:
             print(leaf)
             tree_copy.get_leaves_by_name(leaf)[0].delete()
 
