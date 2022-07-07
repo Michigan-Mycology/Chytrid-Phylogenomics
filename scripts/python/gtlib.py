@@ -19,6 +19,10 @@ import numpy as np
 class MultiMarkerGeneTrees(object):
 
     def __init__(self, tree_paths, rooted=False, suffix=".aa.tre.renamed"):
+
+        if len(tree_paths) == 0:
+            raise IOError
+
         self.trees = {}
         tree_files = tree_paths
         for t in tree_files:

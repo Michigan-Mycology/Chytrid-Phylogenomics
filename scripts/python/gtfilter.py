@@ -118,12 +118,13 @@ def taxon_occupancy(all_trees, isolates, outpath):
 
 
 def write_per_marker_quartet_group_monophyletic_clades(all_trees,
-                                                       quartets_path):
+                                                       quartets_path,
+                                                       json_path):
     # outgroup_isolates = ["GCF_000016345.1", "GCF_003065365.1", "GCF_000019745.1", "GCF_003261295.1"]
     # all_trees.root(outgroup_isolates)
     all_trees.midpoint_root()
 
-    #for mark, tree in all_trees.trees.items():
+    # for mark, tree in all_trees.trees.items():
     #    for l in tree.get_leaves():
     #        print(l.isolate)
 
@@ -139,15 +140,15 @@ def write_per_marker_quartet_group_monophyletic_clades(all_trees,
                 if len(spl[i]) > 0:
                     quartet_groups[i].append(spl[i])
 
-    mono = [0] * len(quartet_groups)
+    mono = [0] * (len(quartet_groups) - 1)
     all_mono = 0
     per_marker_quartet_group_monophyletic_clades = {}
     for marker, tree in all_trees.trees.items():
         per_marker_quartet_group_monophyletic_clades[marker] = {}
         copy_qg = copy.deepcopy(quartet_groups)
         # print(copy_qg)
-        mono_log = [True] * len(quartet_groups)
-        for i in range(0, len(quartet_groups)):
+        mono_log = [True] * (len(quartet_groups) - 1)
+        for i in range(0, len(quartet_groups) - 1):
 
             # Skip quartet group if none of the tips are present in the gene tree
             # ^ Necessary because TreeNode.check_monophyly(ignore_missing = True) will return True
@@ -204,7 +205,7 @@ def write_per_marker_quartet_group_monophyletic_clades(all_trees,
             all_mono += 1
 
     with open(
-            "per_marker_quartet_group_monophyletic_clades_b_c_sep_inclOutgroup.json",
+            json_path,
             "w") as outfile:
         json.dump(per_marker_quartet_group_monophyletic_clades, outfile)
 
@@ -218,8 +219,8 @@ def write_per_marker_quartet_group_monophyletic_clades(all_trees,
     return None
 
 
-def print_nice_quartet_monophyly():
-    with open("per_marker_quartet_group_monophyletic_clades_b_c_sep.json",
+def print_nice_quartet_monophyly(json_path):
+    with open(json_path,
               'r') as openfile:
         per_marker_quartet_group_monophyletic_clades = json.load(openfile)
         for marker, qg in per_marker_quartet_group_monophyletic_clades.items():
@@ -235,6 +236,9 @@ class qNode(object):
     def __repr__(self):
         return str(self.tips).replace("[", "(").replace("]", ")")
 
+    def leaves(self):
+        return self.node.get_leaves()
+
 
 def get_quartet_topology(quartet_group_nodes):
     shallowest_sistership = None
@@ -243,9 +247,8 @@ def get_quartet_topology(quartet_group_nodes):
     # Generate the combinations of possible bifurcation topologies
     # base on the length of the quartet_group_nodes dictionary
     ncomps = len(quartet_group_nodes)
-    #quartet_tips = list(quartet_group_nodes.keys())
+    # quartet_tips = list(quartet_group_nodes.keys())
 
-    print(quartet_group_nodes)
     combs = [itertools.combinations(quartet_group_nodes.keys(), r=2)]
     '''
     combs = [
@@ -253,16 +256,17 @@ def get_quartet_topology(quartet_group_nodes):
             itertools.combinations([str(x) for x in quartet_tips], r=2))
     ]
     '''
-    #qr = {x: 0 for x in combs}
-    #print(qr)
+    # qr = {x: 0 for x in combs}
+    # print(qr)
 
     sister_pair = None
     # print(qr)
     for qgi, node in quartet_group_nodes.items():
         if node is not None:
             compare_to = list(quartet_group_nodes.keys())
-            print(compare_to)
+            # print(compare_to)
             compare_to.remove(qgi)
+            print("COMPARE TO", compare_to)
             sis = node.get_sisters()
             # print(node.get_leaf_names())
             if len(sis) == 1:
@@ -276,57 +280,84 @@ def get_quartet_topology(quartet_group_nodes):
 
                         # Generate the qr index so that different combinations aren't
                         # duplicated
-                        #qr_idx = [int(x) for x in list(f"{qgi}{c}")]
-                        #qr_idx.sort()
-                        #qr_idx = [str(x) for x in qr_idx]
-                        #qr_idx = ''.join(qr_idx)
+                        # qr_idx = [int(x) for x in list(f"{qgi}{c}")]
+                        # qr_idx.sort()
+                        # qr_idx = [str(x) for x in qr_idx]
+                        # qr_idx = ''.join(qr_idx)
 
                         # This is the shallowest sister relationship
                         assert sis[0].get_ancestors()[0] == node.get_ancestors(
                         )[0], "First ancestor of shallowest sisters is not the same"
                         shallowest_sistership = sis[0].get_ancestors()[0]
-                        #print(qr_idx)
-                        #left_out_group = ''.join([
+                        # print(qr_idx)
+                        # left_out_group = ''.join([
                         #    str(x) for x in compare_to if str(x) not in qr_idx
                         #])
                         left_out_group = [
                             x for x in quartet_group_nodes.keys()
                             if str(x) not in [str(c), str(qgi)]
                         ]
-                        print(left_out_group)
-                        #assert len(
+                        # print(left_out_group)
+                        # assert len(
                         #    left_out_group
                         #) <= 1, "More than one object in left_out_group"
                         if len(left_out_group) == 0:
                             left_out_group = None
-                        #else:
+                        # else:
                         #    left_out_group = left_out_group[0]
-                        sister_pair = qNode([qNode(qgi), c])
+                        sister_pair = qNode(
+                            [qNode(qgi), c])
                         break
 
                     # If the the two clades, together, are paraphyletic
                     else:
-                        #continue
+                        # continue
                         # print(sis)
+                        i = 0
                         for curr_node in quartet_group_nodes[c].iter_ancestors(
                         ):
-                            curr_node_sis = curr_node.get_sisters()
-                            #print("Curr_node_sis:", curr_node_sis)
-                            if len(curr_node_sis) == 1:
-                                if curr_node_sis[0] is quartet_group_nodes[c]:
+                            # print(i)
+                            # print(curr_node.get_leaves())
+                            # i = i + 1
+                            curr_node_sisters = curr_node.get_sisters()
+                            # print("Curr_node_sis:", curr_node_sis)
+                            # if len(curr_node_sisters) == 1:
+                            for s in curr_node_sisters:
+                                # for s in curr_node_sis:
+                                #    print(s.get_leaves())
+                                #    print("---")
+                                # print("-----")
+
+                                if s is quartet_group_nodes[c]:
                                     print(
                                         f"{qgi} is sister to the {c} PLUS: {curr_node.get_leaf_names()}"
                                     )
                                     break
 
                                 else:
-                                    if node in curr_node.get_descendants():
+                                    if quartet_group_nodes[c] in curr_node.get_descendants():
                                         print(
                                             f"{qgi} is a descedant of a clade containing {c} (along with other tips), with size {len(curr_node.get_leaf_names())}"
                                         )
+                                        # shallowest_sistership = s.get_ancestors()[
+                                        #    0]
+                                        # sister_pair = qNode([qNode(qgi), c])
+                                        # print(c)
+                                        # left_out_group = [
+                                        #    x for x in quartet_group_nodes.keys()
+                                        #    if str(x) not in [str(c), str(qgi)]
+                                        #]
+                                        # if len(left_out_group) == 0:
+                                        #    left_out_group = None
                                         break
-
-                    # Break if shallowest sister relationship has been found
+                            # else:
+                                # for s in curr_node_sis:
+                                    # print(s.get_leaves())
+                                    # print("---")
+                                # print("----------")
+                                # pass
+                                # Break if shallowest sister relationship has
+                                # been found
                 if sister_pair is not None:
                     break
 
@@ -341,14 +372,15 @@ def get_quartet_topology(quartet_group_nodes):
                 for s in sis:
                     print(s.get_leaf_names())
                 print("<<<<<<<")
-                #raise ValueError("More than one sister clade!")
+                # raise ValueError("More than one sister clade!")
 
     # Get the relationship of sister-pair to next sister
+    print("SISTER PAIR: ", sister_pair)
     print(f"Group left out is : {left_out_group}")
     if shallowest_sistership is not None and sister_pair is not None:
-        print(left_out_group)
+        # print(left_out_group)
         if left_out_group is not None:
-            print("It's not none!")
+            # print("It's not none!")
             next_qgn = {
                 sister_pair: shallowest_sistership,
             }
@@ -357,21 +389,22 @@ def get_quartet_topology(quartet_group_nodes):
 
         else:
             next_qgn = {0: shallowest_sistership}
-        print(next_qgn)
+        # print(next_qgn)
         return (sister_pair, next_qgn)
     else:
         return None
 
 
-def quartet_repr(all_trees, quartets_path):
+def quartet_repr(all_trees, quartets_path, json_path):
     all_trees.midpoint_root()
     with open(
-            "per_marker_quartet_group_monophyletic_clades_b_c_sep_inclOutgroup.json",
+            json_path,
             'r') as openfile:
         per_marker_quartet_group_monophyletic_clades = json.load(openfile)
     for marker, qg in per_marker_quartet_group_monophyletic_clades.items():
         sister_pair = None
-        quartet_group_nodes = {0: None, 1: None, 2: None}
+        # quartet_group_nodes = {0: None, 1: None, 2: None}
+        quartet_group_nodes = {}
         gt = all_trees.trees[marker]
         for i, clades in qg.items():
             if clades is not None:
@@ -395,7 +428,7 @@ def quartet_repr(all_trees, quartets_path):
             qNode(k): v
             for k, v in quartet_group_nodes.items()
         }
-        print(quartet_group_nodes)
+
         next_qgn = quartet_group_nodes
         print(marker)
         while True:
@@ -412,9 +445,9 @@ def quartet_repr(all_trees, quartets_path):
                     print(marker, "Newick:", sister_pair)
                     break
 
-        #print(marker, ">>>")
-        #next_qgn = get_quartet_topology(quartet_group_nodes)
-        #print(marker, next_qgn)
+        # print(marker, ">>>")
+        # next_qgn = get_quartet_topology(quartet_group_nodes)
+        # print(marker, next_qgn)
         # if next_qgn is not None:
         #    next_qgn = get_quartet_topology(next_qgn)
         #    print(marker, next_qgn)
@@ -439,8 +472,7 @@ if __name__ == "__main__":
         "--hitreport",
         action="store",
         required=False,
-        help=
-        "ONLY REQUIRED FOR `filter-phyly`. Path to hit_report_all.csv generated by domtbl2unaln."
+        help="ONLY REQUIRED FOR `filter-phyly`. Path to hit_report_all.csv generated by domtbl2unaln."
     )
     parser.add_argument("-o",
                         "--outpath",
@@ -452,31 +484,35 @@ if __name__ == "__main__":
         "--phylymat",
         action="store",
         required=False,
-        help=
-        "ONLY REQUIRED FOR `matcompare`. Another monophyly matrix to compare to this one."
+        help="ONLY REQUIRED FOR `matcompare`. Another monophyly matrix to compare to this one."
     )
     parser.add_argument(
         "-i",
         "--isolates",
         action="store",
         required=False,
-        help=
-        "ONLY REQUIRED FOR `taxocc`. Two-column, tab-separated list that has full tree tip label in column 1 and LTP in column 2."
+        help="ONLY REQUIRED FOR `taxocc`. Two-column, tab-separated list that has full tree tip label in column 1 and LTP in column 2."
     )
     parser.add_argument(
         "--remove-remaining-polyphyly",
         action="store_true",
         required=False,
-        help=
-        "ONLY REQUIRED FOR `filter-phyly`. This flag will remove all unresolved polyphyletic taxa in each marker tree after completion of the filtering pipeline."
+        help="ONLY REQUIRED FOR `filter-phyly`. This flag will remove all unresolved polyphyletic taxa in each marker tree after completion of the filtering pipeline."
     )
     parser.add_argument(
         "-q",
         "--quartets",
         action="store",
         required=False,
-        help=
-        "ONLY REQUIRED FOR `quartet-repr`, A four column tab-separated text files that has the tip labels for each quartet in a column."
+        help="ONLY REQUIRED FOR `quartet-repr`, A four column tab-separated text files that has the tip labels for each quartet in a column."
+    )
+    parser.add_argument(
+        "-j",
+        "--json",
+        action="store",
+        required=False,
+        default="monophyletic_groups.json",
+        help="ONLY REQUIRED FOR `quartet-monophyly` or `quartet-repr`: Path to the input (`quartet-repr`) or output (`quartet-monophyly`) json file of monophyletic groupings of different quartet groups."
     )
     parser.add_argument(
         "--suffix",
@@ -505,9 +541,12 @@ if __name__ == "__main__":
     ]
     markers = [os.path.basename(x.replace(args.suffix, "")) for x in files]
 
-    all_trees = gtlib.MultiMarkerGeneTrees(files,
-                                           suffix=args.suffix,
-                                           rooted=args.rooted)
+    try:
+        all_trees = gtlib.MultiMarkerGeneTrees(files,
+                                               suffix=args.suffix,
+                                               rooted=args.rooted)
+    except IOError:
+        print(f"There are NO tree located at `{args.genetrees}` that end with the suffix `{args.suffix}`")
 
     if args.task == "phylymat":
         write_monophyly_matrix(all_trees, args.outpath)
@@ -526,14 +565,14 @@ if __name__ == "__main__":
         taxon_occupancy(all_trees, args.isolates, args.outpath)
 
     elif args.task == "quartet-repr":
-        quartet_repr(all_trees, args.quartets)
+        quartet_repr(all_trees, args.quartets, args.json)
 
     elif args.task == "print-nice-quartet-monophyly":
-        print_nice_quartet_monophyly()
+        print_nice_quartet_monophyly(args.json)
 
     elif args.task == "quartet-group-monophyly":
         write_per_marker_quartet_group_monophyletic_clades(
-            all_trees, args.quartets)
+            all_trees, args.quartets, args.json)
 
     else:
         # Shouldn't happen
