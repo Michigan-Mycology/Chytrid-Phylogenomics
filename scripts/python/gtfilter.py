@@ -266,16 +266,19 @@ def get_quartet_topology(quartet_group_nodes):
             compare_to = list(quartet_group_nodes.keys())
             # print(compare_to)
             compare_to.remove(qgi)
+            compare_to.sort(key=lambda x: 1 if isinstance(
+                x.tips, int) else len(x.tips))
             print("COMPARE TO", compare_to)
-            sis = node.get_sisters()
+            sisters = node.get_sisters()
             # print(node.get_leaf_names())
-            if len(sis) == 1:
+            # if len(sis) == 1:
+            for sis in sisters:
                 for c in compare_to:
                     if quartet_group_nodes[c] is None:
                         continue
 
                     # If the two clades, together, are monophyletic
-                    if sis[0] is quartet_group_nodes[c]:
+                    if sis is quartet_group_nodes[c]:
                         # print(f"{qgi} is sister to {c}")
 
                         # Generate the qr index so that different combinations aren't
@@ -286,9 +289,9 @@ def get_quartet_topology(quartet_group_nodes):
                         # qr_idx = ''.join(qr_idx)
 
                         # This is the shallowest sister relationship
-                        assert sis[0].get_ancestors()[0] == node.get_ancestors(
+                        assert sis.get_ancestors()[0] == node.get_ancestors(
                         )[0], "First ancestor of shallowest sisters is not the same"
-                        shallowest_sistership = sis[0].get_ancestors()[0]
+                        shallowest_sistership = sis.get_ancestors()[0]
                         # print(qr_idx)
                         # left_out_group = ''.join([
                         #    str(x) for x in compare_to if str(x) not in qr_idx
@@ -316,6 +319,8 @@ def get_quartet_topology(quartet_group_nodes):
                         i = 0
                         for curr_node in quartet_group_nodes[c].iter_ancestors(
                         ):
+                            if sister_pair is not None:
+                                break
                             # print(i)
                             # print(curr_node.get_leaves())
                             # i = i + 1
@@ -335,20 +340,26 @@ def get_quartet_topology(quartet_group_nodes):
                                     break
 
                                 else:
-                                    if quartet_group_nodes[c] in curr_node.get_descendants():
+                                    other_compares = list(compare_to)
+                                    other_compares.remove(c)
+                                    print(other_compares)
+                                    other_compare_nodes = {
+                                        k: v for k, v in quartet_group_nodes.items() if str(k) in other_compares}
+                                    if quartet_group_nodes[c] in curr_node.get_descendants() and all([v not in curr_node.get_descendants() for k, v in other_compare_nodes.items()]):
                                         print(
                                             f"{qgi} is a descedant of a clade containing {c} (along with other tips), with size {len(curr_node.get_leaf_names())}"
                                         )
-                                        # shallowest_sistership = s.get_ancestors()[
-                                        #    0]
-                                        # sister_pair = qNode([qNode(qgi), c])
+                                        shallowest_sistership = s.get_ancestors()[
+                                            0]
+                                        sister_pair = qNode([qNode(qgi), c])
                                         # print(c)
-                                        # left_out_group = [
-                                        #    x for x in quartet_group_nodes.keys()
-                                        #    if str(x) not in [str(c), str(qgi)]
-                                        #]
-                                        # if len(left_out_group) == 0:
-                                        #    left_out_group = None
+                                        left_out_group = [
+                                            x for x in quartet_group_nodes.keys()
+                                            if str(x) not in [str(c), str(qgi)]
+                                        ]
+                                        print("LEFTOUT:", left_out_group)
+                                        if len(left_out_group) == 0:
+                                            left_out_group = None
                                         break
                             # else:
                                 # for s in curr_node_sis:
@@ -361,34 +372,21 @@ def get_quartet_topology(quartet_group_nodes):
                 if sister_pair is not None:
                     break
 
-            elif len(sis) < 1:
-                continue
-
-            else:
-                print(">>>>>>>")
-                print(
-                    f"More than one sister clade for group {qgi}! {len(sis)} of them..."
-                )
-                for s in sis:
-                    print(s.get_leaf_names())
-                print("<<<<<<<")
-                # raise ValueError("More than one sister clade!")
-
-    # Get the relationship of sister-pair to next sister
+# Get the relationship of sister-pair to next sister
     print("SISTER PAIR: ", sister_pair)
     print(f"Group left out is : {left_out_group}")
     if shallowest_sistership is not None and sister_pair is not None:
         # print(left_out_group)
         if left_out_group is not None:
             # print("It's not none!")
-            next_qgn = {
-                sister_pair: shallowest_sistership,
-            }
+            next_qgn = {}
             for g in left_out_group:
                 next_qgn[g] = quartet_group_nodes[g]
+            next_qgn[sister_pair] = shallowest_sistership
 
         else:
             next_qgn = {0: shallowest_sistership}
+            print(next_qgn)
         # print(next_qgn)
         return (sister_pair, next_qgn)
     else:
