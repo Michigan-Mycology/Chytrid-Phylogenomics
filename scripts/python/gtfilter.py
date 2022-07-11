@@ -237,6 +237,8 @@ class qNode(object):
             raise ValueError(
                 "Argument `tips` to qNode is not a list, qNode, or an int")
 
+        self.n = 0
+
     def __repr__(self):
         if len(self.tips) > 1:
             return str(self.tips).replace("[", "(").replace("]", ")")
@@ -245,16 +247,67 @@ class qNode(object):
         else:
             raise ValueError("Tips attribute of qNode is zero-length.")
 
+    def __iter__(self):
+        self.n = 0
+        return self
+
+    def __next__(self):
+        if self.n <= len(self.tips) - 1:
+            res = self.tips[self.n]
+            self.n += 1
+            return res
+        else:
+            raise StopIteration
+
+    def to_list(self):
+        ltopo = []
+        for t in self.tips:
+            if isinstance(t, qNode):
+                if len(t.tips) == 1:
+                    ltopo.append(t)
+                else:
+                    ltopo.append(t.to_list())
+        # ltopo.sort()
+        return ltopo
+
+    def get_subtopologies(self):
+        lres = []
+        lrepr = self.to_list()
+        # print(lrepr)
+        # return None
+        while True:
+            next_tips = []
+            for t in lrepr:
+                if isinstance(t, list):
+                    for tt in t:
+                        if tt not in lrepr:
+                            lres.append(t)
+                        next_tips.append(tt)
+                else:
+                    lres.append(t)
+            lrepr = next_tips
+            if len(next_tips) == 0:
+                break
+        return lres
+
+    def is_synonymous_with(self, other):
+        pass
+
     def leaves(self):
         return self.node.get_leaves()
 
 
 class shallowest_sistership_manager(object):
 
-    def __init__(self):
+    def __init__(self, quartet_group_nodes):
         self.node = None
         self.qgi = None
         self.c = None
+
+        self.quartet_group_nodes = quartet_group_nodes
+
+        self.sister_pair = None
+        self.left_out_group = None
 
     def _set(self, node, qgi, c):
         self.node = node
@@ -278,9 +331,37 @@ class shallowest_sistership_manager(object):
         else:
             return False
 
+    def get_left_out_groups(self):
+
+        left_out_group = [
+            x for x in
+            self.quartet_group_nodes.keys()
+            if str(x) not in
+            [str(self.c), str(
+                self.qgi)]
+        ]
+
+        if len(left_out_group) == 0:
+            self.left_out_group = None
+        else:
+            self.left_out_group = left_out_group
+
+        return self.left_out_group
+
+    def commit(self, sister_pair=None):
+
+        if self.qgi is None or self.c is None:
+            raise ValueError(
+                "One of `qgi` or `c` is None. Cannot commit to a sister pair.")
+
+        if sister_pair is None:
+            self.sister_pair = qNode(
+                [qNode(self.qgi.tips), self.c])
+            left_out_group = self.get_left_out_groups()
+
 
 def get_quartet_topology_first(quartet_group_nodes):
-    shallowest_sistership = shallowest_sistership_manager()
+    shallowest_sistership = shallowest_sistership_manager(quartet_group_nodes)
     left_out_group = None
 
     # Generate the combinations of possible bifurcation topologies
@@ -381,6 +462,10 @@ def get_quartet_topology_first(quartet_group_nodes):
             print(f"FIRST PASS ({shallowest_sistership.qgi}, {shallowest_sistership.c}): {shallowest_sistership.is_set()} {sn} {len(sisters)}")
             if shallowest_sistership.is_set() and sn == len(sisters):
 
+                # shallowest_sistership.commit()
+
+                # print("LEFTOUT:", shallowest_sistership.left_out_group)
+
                 sister_pair = qNode(
                     [qNode(shallowest_sistership.qgi.tips), shallowest_sistership.c])
                 # print(c)
@@ -394,6 +479,7 @@ def get_quartet_topology_first(quartet_group_nodes):
                 print("LEFTOUT:", left_out_group)
                 if len(left_out_group) == 0:
                     left_out_group = None
+
                 print(
                     f">>>>>>>LOCKING IN shallowest_sistership between nodes {shallowest_sistership.qgi} and {shallowest_sistership.c}")
                 break
@@ -427,7 +513,7 @@ def get_quartet_topology_first(quartet_group_nodes):
 
 
 def get_quartet_topology_second(quartet_group_nodes):
-    shallowest_sistership = shallowest_sistership_manager()
+    shallowest_sistership = shallowest_sistership_manager(quartet_group_nodes)
     left_out_group = None
 
     # Generate the combinations of possible bifurcation topologies
@@ -659,6 +745,9 @@ def quartet_repr(all_trees, quartets_path, json_path):
     all_trees.midpoint_root()
     with open(json_path, 'r') as openfile:
         per_marker_quartet_group_monophyletic_clades = json.load(openfile)
+
+    topologies = {}
+
     for marker, qg in per_marker_quartet_group_monophyletic_clades.items():
         sister_pair = None
         # quartet_group_nodes = {0: None, 1: None, 2: None}
@@ -715,6 +804,7 @@ def quartet_repr(all_trees, quartets_path, json_path):
             print("CRITICAL: There is only one group present.")
         print(marker, len(gt.get_leaves()))
         next_qgn = quartet_group_nodes
+
         while True:
             res = get_quartet_topology_first(next_qgn)
             if res is None:
@@ -739,6 +829,17 @@ def quartet_repr(all_trees, quartets_path, json_path):
                     break
                 else:
                     print("Unable to form any relationships in the tree.")
+
+        topologies[marker] = sister_pair
+
+    for marker, topo in topologies.items():
+        print(marker, topo, type(topo))
+        if topo is not None:
+            print(topo.to_list())
+            print(topo.get_subtopologies())
+            continue
+            for t in topo.iter_desc():
+                print(t)
 
         # print(marker, ">>>")
         # next_qgn = get_quartet_topology(quartet_group_nodes)
