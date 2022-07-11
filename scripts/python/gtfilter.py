@@ -280,7 +280,7 @@ class qNode(object):
             for t in lrepr:
                 if isinstance(t, list):
                     for tt in t:
-                        if tt not in lrepr:
+                        if tt not in lres:
                             lres.append(t)
                         next_tips.append(tt)
                 else:
