@@ -261,8 +261,22 @@ class qNode(object):
 
     def to_list(self):
         ltopo = []
-        for t in self.tips:
-            if isinstance(t, qNode):
+
+        # Terminal qNode objects
+        # where len(qNode.tips) == 1
+        # and type(qNode.tips[0]) == int
+        # will get caught here.
+        # This block ensures that they return a nonempty list.
+        if len(self.tips) == 1:
+            assert isinstance(self.tips[
+                              0], int), "1-length qNode.tips is not composed of a single integer value"
+            ltopo.append(self)
+        else:
+            assert len(self.tips) == 2, "qNode.tips is longer than 2 elements"
+            for t in self.tips:
+                assert isinstance(
+                    t, qNode), "2-length qNode.tips is of mixed composition when it should be 2 qNode objects"
+
                 if len(t.tips) == 1:
                     ltopo.append(t)
                 else:
@@ -270,7 +284,7 @@ class qNode(object):
         # ltopo.sort()
         return ltopo
 
-    def get_subtopologies(self):
+    def get_subtopologies_as_strings(self):
         lres = []
         lrepr = self.to_list()
         # print(lrepr)
@@ -278,20 +292,85 @@ class qNode(object):
         while True:
             next_tips = []
             for t in lrepr:
+                # print("T", t)
+                # print("LRES", lres)
                 if isinstance(t, list):
                     for tt in t:
-                        if tt not in lres:
-                            lres.append(t)
+                        # print("TT", tt)
+                        # if tt not in lres:
                         next_tips.append(tt)
+                    add_t = [str(x) for x in t]
+                    add_t.sort()
+                    lres.append(add_t)
                 else:
-                    lres.append(t)
+                    lres.append(str(t))
             lrepr = next_tips
+            # print("NEXT TIPS", next_tips)
             if len(next_tips) == 0:
                 break
         return lres
 
+    def get_subtopologies(self):
+        lrepr = self.to_list()
+        lres = [lrepr]
+        # print(lrepr)
+        # return None
+        while True:
+            next_tips = []
+            for t in lrepr:
+                # print("T", t)
+                # print("LRES", lres)
+                if isinstance(t, list):
+                    for tt in t:
+                        # print("TT", tt)
+                        # if tt not in lres:
+                        next_tips.append(tt)
+                    add_t = t
+                    add_t.sort(key=lambda x: str(x))
+                    lres.append(add_t)
+                else:
+                    lres.append(t)
+            lrepr = next_tips
+            # print("NEXT TIPS", next_tips)
+            if len(next_tips) == 0:
+                break
+        return lres
+
+    def get_subtopologies_as_qNodes(self):
+        remaining = self
+        lres = [remaining]
+        # print(lrepr)
+        # return None
+        while True:
+            next_tips = []
+            for t in remaining:
+                # print("T", t)
+                # print("LRES", lres)
+                if isinstance(t, qNode):
+                    for tt in t:
+                        # print("TT", tt)
+                        # if tt not in lres:
+                        next_tips.append(tt)
+                    lres.append(t)
+                # else:
+                #    lres.append(t)
+            remaining = next_tips
+            # print("NEXT TIPS", next_tips)
+            if len(next_tips) == 0:
+                break
+        return lres
+
+    def tips_included(self):
+        ti = [x for x in self.get_subtopologies_as_strings() if isinstance(x, str)]
+        ti.sort()
+        return ti
+
     def is_synonymous_with(self, other):
-        pass
+        if all([s in other.get_subtopologies_as_strings() for s in self.get_subtopologies_as_strings()]) and other.tips_included() == self.tips_included():
+            return True
+
+        else:
+            return False
 
     def leaves(self):
         return self.node.get_leaves()
@@ -741,6 +820,74 @@ def get_quartet_topology_second(quartet_group_nodes):
         return None
 
 
+def get_all_possible_topologies(quartet_group_nodes):
+    tips = list(quartet_group_nodes.keys())
+
+    possible_topologies = list(tips)
+    i = 1
+    while i <= len(quartet_group_nodes.keys()) - 1:
+        for pt in itertools.combinations(tips, 2):
+            if len(pt[0].tips_included()) + len(pt[1].tips_included()) > len(quartet_group_nodes.keys()):
+                continue
+            else:
+                if pt not in possible_topologies:
+                    # print(pt, pt[0].tips_included(), pt[1].tips_included())
+                    if not any([x in pt[1].tips_included() for x in pt[0].tips_included()]):
+                        # print(">>>", pt, pt[0].tips_included(), pt[
+                              # 1].tips_included())
+                        topo_to_add = qNode([pt[0], pt[1]])
+                        if not any([t.is_synonymous_with(topo_to_add) for t in possible_topologies]):
+                            possible_topologies.append(qNode([pt[0], pt[1]]))
+
+                        tips.append(qNode([pt[0], pt[1]]))
+
+        i += 1
+        # print(tips)
+    return possible_topologies
+
+
+def sisterhood_heatmap(quartet_group_nodes, topologies):
+    all_possible_sisters = [x for x in get_all_possible_topologies(
+        quartet_group_nodes) if len(x.tips_included()) < len(quartet_group_nodes.keys())]
+    print(all_possible_sisters)
+    ldict = []
+    index = []
+
+    row_col_map = {}
+    for pt in all_possible_sisters:
+        row_col_map[pt] = str(pt)
+        ldict.append({str(t): 0 for t in all_possible_sisters})
+        index.append(str(pt))
+
+    df = pd.DataFrame(ldict, index=index)
+    print([type(x) for x in df.index])
+    for marker, topo in topologies.items():
+        if topo is None:
+            continue
+        else:
+            print(marker, topo)
+            for sub in [s for s in topo.get_subtopologies_as_qNodes() if len(s.tips) > 1]:
+                row = None
+                col = None
+                for t, s in row_col_map.items():
+                    print(sub)
+                    if sub.tips[0].is_synonymous_with(t):
+                        col = s
+                    if sub.tips[1].is_synonymous_with(t):
+                        row = s
+
+                    if row is not None and col is not None:
+                        break
+                print(type(row), type(col))
+                if df.loc[row, col] == 0 and df.loc[col, row] != 0:
+                    df.loc[col, row] += 1
+                else:
+                    df.loc[row, col] += 1
+                # print(pt, "|", sub.tips[0], row, type(row), df.index[
+                #     row], "|", sub.tips[1], col, type(col), df.columns[col])
+    df.to_csv("topology_heatmatp.tsv", sep="\t")
+
+
 def quartet_repr(all_trees, quartets_path, json_path):
     all_trees.midpoint_root()
     with open(json_path, 'r') as openfile:
@@ -800,6 +947,12 @@ def quartet_repr(all_trees, quartets_path, json_path):
             qNode(k): v
             for k, v in quartet_group_nodes.items()
         }
+
+        # all_possible = get_all_possible_sisters (quartet_group_nodes)
+        # print(len(all_possible))
+        # for i in all_possible:
+        #    print(i)
+        # sys.exit()
         if len(quartet_group_nodes.keys()) == 1:
             print("CRITICAL: There is only one group present.")
         print(marker, len(gt.get_leaves()))
@@ -832,23 +985,29 @@ def quartet_repr(all_trees, quartets_path, json_path):
 
         topologies[marker] = sister_pair
 
+    topology_counts = {}
     for marker, topo in topologies.items():
-        print(marker, topo, type(topo))
-        if topo is not None:
-            print(topo.to_list())
-            print(topo.get_subtopologies())
+        if topo is None:
             continue
-            for t in topo.iter_desc():
-                print(t)
+        inserted = False
+        for q, c in topology_counts.items():
+            if topo.is_synonymous_with(q):
+                inserted = True
+                topology_counts[q] += 1
+                break
+        if not inserted:
+            topology_counts[topo] = 1
 
-        # print(marker, ">>>")
-        # next_qgn = get_quartet_topology(quartet_group_nodes)
-        # print(marker, next_qgn)
-        # if next_qgn is not None:
-        #    next_qgn = get_quartet_topology(next_qgn)
-        #    print(marker, next_qgn)
+        print(marker, topo)
+        for sub in topo.get_subtopologies():
+            print(sub)
+        print("----")
 
-        print("--------")
+    for topo, count in topology_counts.items():
+        print(topo, count)
+    sys.exit()
+    sisterhood_heatmap(quartet_group_nodes, topologies)
+    #    print("--------")
 
     # for k, v in qr.items():
     #    print(k, v)
