@@ -268,14 +268,16 @@ class qNode(object):
         # will get caught here.
         # This block ensures that they return a nonempty list.
         if len(self.tips) == 1:
-            assert isinstance(self.tips[
-                              0], int), "1-length qNode.tips is not composed of a single integer value"
+            assert isinstance(
+                self.tips[0], int
+            ), "1-length qNode.tips is not composed of a single integer value"
             ltopo.append(self)
         else:
             assert len(self.tips) == 2, "qNode.tips is longer than 2 elements"
             for t in self.tips:
                 assert isinstance(
-                    t, qNode), "2-length qNode.tips is of mixed composition when it should be 2 qNode objects"
+                    t, qNode
+                ), "2-length qNode.tips is of mixed composition when it should be 2 qNode objects"
 
                 if len(t.tips) == 1:
                     ltopo.append(t)
@@ -361,12 +363,18 @@ class qNode(object):
         return lres
 
     def tips_included(self):
-        ti = [x for x in self.get_subtopologies_as_strings() if isinstance(x, str)]
+        ti = [
+            x for x in self.get_subtopologies_as_strings()
+            if isinstance(x, str)
+        ]
         ti.sort()
         return ti
 
     def is_synonymous_with(self, other):
-        if all([s in other.get_subtopologies_as_strings() for s in self.get_subtopologies_as_strings()]) and other.tips_included() == self.tips_included():
+        if all([
+                s in other.get_subtopologies_as_strings()
+                for s in self.get_subtopologies_as_strings()
+        ]) and other.tips_included() == self.tips_included():
             return True
 
         else:
@@ -413,11 +421,8 @@ class shallowest_sistership_manager(object):
     def get_left_out_groups(self):
 
         left_out_group = [
-            x for x in
-            self.quartet_group_nodes.keys()
-            if str(x) not in
-            [str(self.c), str(
-                self.qgi)]
+            x for x in self.quartet_group_nodes.keys()
+            if str(x) not in [str(self.c), str(self.qgi)]
         ]
 
         if len(left_out_group) == 0:
@@ -434,8 +439,7 @@ class shallowest_sistership_manager(object):
                 "One of `qgi` or `c` is None. Cannot commit to a sister pair.")
 
         if sister_pair is None:
-            self.sister_pair = qNode(
-                [qNode(self.qgi.tips), self.c])
+            self.sister_pair = qNode([qNode(self.qgi.tips), self.c])
             left_out_group = self.get_left_out_groups()
 
 
@@ -477,16 +481,14 @@ def get_quartet_topology_first(quartet_group_nodes):
             if node.is_root() and len(compare_to) == 1:
                 # print(c, qgi.tips, compare_to[0], qgi)
                 # sys.exit()
-                shallowest_sistership.set(
-                    node, quartet_group_nodes, qgi, compare_to[0])
-                sister_pair = qNode(
-                    [qNode(qgi.tips), compare_to[0]])
+                shallowest_sistership.set(node, quartet_group_nodes, qgi,
+                                          compare_to[0])
+                sister_pair = qNode([qNode(qgi.tips), compare_to[0]])
                 # print(c)
                 left_out_group = [
-                    x for x in
-                    quartet_group_nodes.keys()
-                    if str(x) not in
-                    [str(compare_to[0]), str(qgi)]
+                    x for x in quartet_group_nodes.keys()
+                    if str(x) not in [str(compare_to[0]),
+                                      str(qgi)]
                 ]
 
                 if len(left_out_group) == 0:
@@ -523,9 +525,11 @@ def get_quartet_topology_first(quartet_group_nodes):
                         # This is the shallowest sister relationship
                         assert sis.get_ancestors()[0] == node.get_ancestors(
                         )[0], "First ancestor of shallowest sisters is not the same"
-                        print(f"BRANCH 1: Setting shallowest_sistership between nodes {qgi} and {c}")
-                        shallowest_sistership.set(
-                            sis.get_ancestors()[0], quartet_group_nodes, qgi, c)
+                        print(
+                            f"BRANCH 1: Setting shallowest_sistership between nodes {qgi} and {c}"
+                        )
+                        shallowest_sistership.set(sis.get_ancestors()[0],
+                                                  quartet_group_nodes, qgi, c)
                         break
                 print("-------")
                 print(f"Done with Sister #{sn}")
@@ -538,29 +542,33 @@ def get_quartet_topology_first(quartet_group_nodes):
             # pass
             # Break if shallowest sister relationship has
             # been found
-            print(f"FIRST PASS ({shallowest_sistership.qgi}, {shallowest_sistership.c}): {shallowest_sistership.is_set()} {sn} {len(sisters)}")
+            print(
+                f"FIRST PASS ({shallowest_sistership.qgi}, {shallowest_sistership.c}): {shallowest_sistership.is_set()} {sn} {len(sisters)}"
+            )
             if shallowest_sistership.is_set() and sn == len(sisters):
 
                 # shallowest_sistership.commit()
 
                 # print("LEFTOUT:", shallowest_sistership.left_out_group)
 
-                sister_pair = qNode(
-                    [qNode(shallowest_sistership.qgi.tips), shallowest_sistership.c])
+                sister_pair = qNode([
+                    qNode(shallowest_sistership.qgi.tips),
+                    shallowest_sistership.c
+                ])
                 # print(c)
                 left_out_group = [
-                    x for x in
-                    quartet_group_nodes.keys()
-                    if str(x) not in
-                    [str(shallowest_sistership.c), str(
-                        shallowest_sistership.qgi)]
+                    x for x in quartet_group_nodes.keys() if str(x) not in [
+                        str(shallowest_sistership.c),
+                        str(shallowest_sistership.qgi)
+                    ]
                 ]
                 print("LEFTOUT:", left_out_group)
                 if len(left_out_group) == 0:
                     left_out_group = None
 
                 print(
-                    f">>>>>>>LOCKING IN shallowest_sistership between nodes {shallowest_sistership.qgi} and {shallowest_sistership.c}")
+                    f">>>>>>>LOCKING IN shallowest_sistership between nodes {shallowest_sistership.qgi} and {shallowest_sistership.c}"
+                )
                 break
 
         if sister_pair is not None:
@@ -628,16 +636,14 @@ def get_quartet_topology_second(quartet_group_nodes):
             if node.is_root() and len(compare_to) == 1:
                 # print(c, qgi.tips, compare_to[0], qgi)
                 # sys.exit()
-                shallowest_sistership.set(
-                    node, quartet_group_nodes, qgi, compare_to[0])
-                sister_pair = qNode(
-                    [qNode(qgi.tips), compare_to[0]])
+                shallowest_sistership.set(node, quartet_group_nodes, qgi,
+                                          compare_to[0])
+                sister_pair = qNode([qNode(qgi.tips), compare_to[0]])
                 # print(c)
                 left_out_group = [
-                    x for x in
-                    quartet_group_nodes.keys()
-                    if str(x) not in
-                    [str(compare_to[0]), str(qgi)]
+                    x for x in quartet_group_nodes.keys()
+                    if str(x) not in [str(compare_to[0]),
+                                      str(qgi)]
                 ]
 
                 if len(left_out_group) == 0:
@@ -667,40 +673,47 @@ def get_quartet_topology_second(quartet_group_nodes):
 
                         other_compare_nodes = {
                             k: v
-                            for k, v in
-                            quartet_group_nodes.items() if str(k)
-                            in [str(x) for x in other_compares]
+                            for k, v in quartet_group_nodes.items()
+                            if str(k) in [str(x) for x in other_compares]
                         }
                         # print(other_compare_nodes)
                         # print(curr_node.get_leaves())
                         overlap_test = [
                             v not in sis.get_descendants()
-                            for k, v in
-                            other_compare_nodes.items()
+                            for k, v in other_compare_nodes.items()
                         ]
                         # print(quartet_group_nodes[c].get_leaves())
                         print("OVERLAP TEST", overlap_test)
-                        if all(overlap_test) and quartet_group_nodes[qgi] in sis.get_ancestors()[0].get_descendants():
+                        if all(overlap_test) and quartet_group_nodes[
+                                qgi] in sis.get_ancestors()[0].get_descendants(
+                                ):
                             print(
                                 f"{qgi} is a descedant of a clade containing {c} (along with other tips), with size {sis.get_ancestors()[0].get_leaf_names()}"
                             )
-                            print(f"BRANCH 2: Setting shallowest_sistership between nodes {qgi} and {c}")
-                            shallowest_sistership.set(sis.get_ancestors(
-                            )[0], quartet_group_nodes, qgi, c)
+                            print(
+                                f"BRANCH 2: Setting shallowest_sistership between nodes {qgi} and {c}"
+                            )
+                            shallowest_sistership.set(sis.get_ancestors()[0],
+                                                      quartet_group_nodes, qgi,
+                                                      c)
 
                             break
 
                     # If the the two clades, together, are paraphyletic
                     else:
                         print("third branch")
-                        print(f"> Sister node #{sn} is not Node {c}. Interate back over ancestors of {qgi} and look in the descendants.")
+                        print(
+                            f"> Sister node #{sn} is not Node {c}. Interate back over ancestors of {qgi} and look in the descendants."
+                        )
                         i = 0
                         # print(
                         #    len(list(quartet_group_nodes[c].iter_ancestors())))
                         depth = 1
                         for curr_node in quartet_group_nodes[c].iter_ancestors(
                         ):
-                            print(f">> Looking for Node {c} in descendants {depth} nodes back from {qgi}")
+                            print(
+                                f">> Looking for Node {c} in descendants {depth} nodes back from {qgi}"
+                            )
                             print(sister_pair)
                             # print(i)
                             # print(curr_node.get_leaves())
@@ -730,38 +743,42 @@ def get_quartet_topology_second(quartet_group_nodes):
 
                                 other_compare_nodes = {
                                     k: v
-                                    for k, v in
-                                    quartet_group_nodes.items() if str(k)
-                                    in [str(x) for x in other_compares]
+                                    for k, v in quartet_group_nodes.items() if
+                                    str(k) in [str(x) for x in other_compares]
                                 }
                                 # print(other_compare_nodes)
                                 # print(curr_node.get_leaves())
                                 overlap_test = [
                                     v not in curr_node.get_descendants()
-                                    for k, v in
-                                    other_compare_nodes.items()
+                                    for k, v in other_compare_nodes.items()
                                 ]
                                 # print(quartet_group_nodes[c].get_leaves())
                                 print("OVERLAP TEST", overlap_test)
 
                                 if quartet_group_nodes[
                                         c] in curr_node.get_descendants(
-                                ) and all(
+                                        ) and all(
                                             overlap_test
-                                ) and quartet_group_nodes[
+                                        ) and quartet_group_nodes[
                                             qgi] in curr_node.get_descendants(
-                                ):
+                                            ):
                                     print(
                                         f"{qgi} is a descedant of a clade containing {c} (along with other tips), with size {len(curr_node.get_leaf_names())}"
                                     )
-                                    print(f"BRANCH 3: Setting shallowest_sistership between nodes {qgi} and {c}")
+                                    print(
+                                        f"BRANCH 3: Setting shallowest_sistership between nodes {qgi} and {c}"
+                                    )
                                     shallowest_sistership.set(
                                         curr_node, quartet_group_nodes, qgi, c)
                                     break
 
                                 else:
-                                    print("In the sister:", quartet_group_nodes[c] in [
-                                          x.get_descendants() for x in curr_node.get_sisters()])
+                                    print(
+                                        "In the sister:",
+                                        quartet_group_nodes[c] in [
+                                            x.get_descendants()
+                                            for x in curr_node.get_sisters()
+                                        ])
                             depth += 1
                 print("-------")
                 print(f"Done with Sister #{sn}")
@@ -774,32 +791,35 @@ def get_quartet_topology_second(quartet_group_nodes):
             # pass
             # Break if shallowest sister relationship has
             # been found
-            print(f"SECOND PASS ({shallowest_sistership.qgi}, {shallowest_sistership.c}): {shallowest_sistership.is_set()} {sn} {len(sisters)}")
+            print(
+                f"SECOND PASS ({shallowest_sistership.qgi}, {shallowest_sistership.c}): {shallowest_sistership.is_set()} {sn} {len(sisters)}"
+            )
             if shallowest_sistership.is_set() and sn == len(sisters):
 
-                sister_pair = qNode(
-                    [qNode(shallowest_sistership.qgi.tips), shallowest_sistership.c])
+                sister_pair = qNode([
+                    qNode(shallowest_sistership.qgi.tips),
+                    shallowest_sistership.c
+                ])
                 # print(c)
                 left_out_group = [
-                    x for x in
-                    quartet_group_nodes.keys()
-                    if str(x) not in
-                    [str(shallowest_sistership.c), str(
-                        shallowest_sistership.qgi)]
+                    x for x in quartet_group_nodes.keys() if str(x) not in [
+                        str(shallowest_sistership.c),
+                        str(shallowest_sistership.qgi)
+                    ]
                 ]
                 print("LEFTOUT:", left_out_group)
                 if len(left_out_group) == 0:
                     left_out_group = None
                 print(
-                    f">>>>>>>LOCKING IN shallowest_sistership between nodes {shallowest_sistership.qgi} and {shallowest_sistership.c}")
+                    f">>>>>>>LOCKING IN shallowest_sistership between nodes {shallowest_sistership.qgi} and {shallowest_sistership.c}"
+                )
                 break
 
         if sister_pair is not None:
             print("breaking because sister_pair is not None")
             break
 
-
-# Get the relationship of sister-pair to next sister
+    # Get the relationship of sister-pair to next sister
     print("SISTER PAIR: ", sister_pair)
     print(f"Group left out is : {left_out_group}")
     if shallowest_sistership.is_set() and sister_pair is not None:
@@ -820,23 +840,30 @@ def get_quartet_topology_second(quartet_group_nodes):
         return None
 
 
-def get_all_possible_topologies(quartet_group_nodes):
-    tips = list(quartet_group_nodes.keys())
+def get_all_possible_topologies(all_tip_nodes):
+    tips = list(all_tip_nodes)
 
     possible_topologies = list(tips)
     i = 1
-    while i <= len(quartet_group_nodes.keys()) - 1:
+    while i <= len(all_tip_nodes) - 1:
         for pt in itertools.combinations(tips, 2):
-            if len(pt[0].tips_included()) + len(pt[1].tips_included()) > len(quartet_group_nodes.keys()):
+            if len(pt[0].tips_included()) + len(
+                    pt[1].tips_included()) > len(all_tip_nodes):
                 continue
             else:
                 if pt not in possible_topologies:
                     # print(pt, pt[0].tips_included(), pt[1].tips_included())
-                    if not any([x in pt[1].tips_included() for x in pt[0].tips_included()]):
+                    if not any([
+                            x in pt[1].tips_included()
+                            for x in pt[0].tips_included()
+                    ]):
                         # print(">>>", pt, pt[0].tips_included(), pt[
-                              # 1].tips_included())
+                        # 1].tips_included())
                         topo_to_add = qNode([pt[0], pt[1]])
-                        if not any([t.is_synonymous_with(topo_to_add) for t in possible_topologies]):
+                        if not any([
+                                t.is_synonymous_with(topo_to_add)
+                                for t in possible_topologies
+                        ]):
                             possible_topologies.append(qNode([pt[0], pt[1]]))
 
                         tips.append(qNode([pt[0], pt[1]]))
@@ -846,9 +873,11 @@ def get_all_possible_topologies(quartet_group_nodes):
     return possible_topologies
 
 
-def sisterhood_heatmap(quartet_group_nodes, topologies):
-    all_possible_sisters = [x for x in get_all_possible_topologies(
-        quartet_group_nodes) if len(x.tips_included()) < len(quartet_group_nodes.keys())]
+def sisterhood_heatmap(all_tip_nodes, topologies):
+    all_possible_sisters = [
+        x for x in get_all_possible_topologies(all_tip_nodes)
+        if len(x.tips_included()) < len(all_tip_nodes)
+    ]
     print(all_possible_sisters)
     ldict = []
     index = []
@@ -866,7 +895,10 @@ def sisterhood_heatmap(quartet_group_nodes, topologies):
             continue
         else:
             print(marker, topo)
-            for sub in [s for s in topo.get_subtopologies_as_qNodes() if len(s.tips) > 1]:
+            for sub in [
+                    s for s in topo.get_subtopologies_as_qNodes()
+                    if len(s.tips) > 1
+            ]:
                 row = None
                 col = None
                 for t, s in row_col_map.items():
@@ -894,6 +926,7 @@ def quartet_repr(all_trees, quartets_path, json_path):
         per_marker_quartet_group_monophyletic_clades = json.load(openfile)
 
     topologies = {}
+    all_tip_nodes = []
 
     for marker, qg in per_marker_quartet_group_monophyletic_clades.items():
         sister_pair = None
@@ -925,11 +958,14 @@ def quartet_repr(all_trees, quartets_path, json_path):
                     clades.sort(key=lambda c: len(c), reverse=True)
                     clade_sizes = [len(x) for x in clades]
                     if clade_sizes.count(max(clade_sizes)) > 1:
-                        print(f"MULTIMAX ({max(clade_sizes)}): {marker}: {clades}")
+                        print(
+                            f"MULTIMAX ({max(clade_sizes)}): {marker}: {clades}"
+                        )
                     else:
                         print(f"Taking largest clade from list: {clades}")
                         leaves = [
-                            x for x in gt.get_leaves() if x.isolate in clades[0]
+                            x for x in gt.get_leaves()
+                            if x.isolate in clades[0]
                         ]
                         assert all([
                             x.is_leaf() for x in leaves
@@ -941,12 +977,16 @@ def quartet_repr(all_trees, quartets_path, json_path):
                         quartet_group_nodes[int(i)] = gt.get_common_ancestor(
                             leaves)
 
-                    print("Non-monophyletic clades",
-                          marker, len(clades), clades)
+                    print("Non-monophyletic clades", marker, len(clades),
+                          clades)
         quartet_group_nodes = {
             qNode(k): v
             for k, v in quartet_group_nodes.items()
         }
+
+        for qn, node in quartet_group_nodes.items():
+            if str(qn) not in [str(x) for x in all_tip_nodes]:
+                all_tip_nodes.append(qn)
 
         # all_possible = get_all_possible_sisters (quartet_group_nodes)
         # print(len(all_possible))
@@ -956,7 +996,7 @@ def quartet_repr(all_trees, quartets_path, json_path):
         if len(quartet_group_nodes.keys()) == 1:
             print("CRITICAL: There is only one group present.")
         print(marker, len(gt.get_leaves()))
-        next_qgn = quartet_group_nodes
+        next_qgn = copy.deepcopy(quartet_group_nodes)
 
         while True:
             res = get_quartet_topology_first(next_qgn)
@@ -1006,7 +1046,7 @@ def quartet_repr(all_trees, quartets_path, json_path):
     for topo, count in topology_counts.items():
         print(topo, count)
     sys.exit()
-    sisterhood_heatmap(quartet_group_nodes, topologies)
+    sisterhood_heatmap(all_tip_nodes, topologies)
     #    print("--------")
 
     # for k, v in qr.items():
@@ -1027,7 +1067,8 @@ if __name__ == "__main__":
         "--hitreport",
         action="store",
         required=False,
-        help="ONLY REQUIRED FOR `filter-phyly`. Path to hit_report_all.csv generated by domtbl2unaln."
+        help=
+        "ONLY REQUIRED FOR `filter-phyly`. Path to hit_report_all.csv generated by domtbl2unaln."
     )
     parser.add_argument("-o",
                         "--outpath",
@@ -1039,27 +1080,31 @@ if __name__ == "__main__":
         "--phylymat",
         action="store",
         required=False,
-        help="ONLY REQUIRED FOR `matcompare`. Another monophyly matrix to compare to this one."
+        help=
+        "ONLY REQUIRED FOR `matcompare`. Another monophyly matrix to compare to this one."
     )
     parser.add_argument(
         "-i",
         "--isolates",
         action="store",
         required=False,
-        help="ONLY REQUIRED FOR `taxocc`. Two-column, tab-separated list that has full tree tip label in column 1 and LTP in column 2."
+        help=
+        "ONLY REQUIRED FOR `taxocc`. Two-column, tab-separated list that has full tree tip label in column 1 and LTP in column 2."
     )
     parser.add_argument(
         "--remove-remaining-polyphyly",
         action="store_true",
         required=False,
-        help="ONLY REQUIRED FOR `filter-phyly`. This flag will remove all unresolved polyphyletic taxa in each marker tree after completion of the filtering pipeline."
+        help=
+        "ONLY REQUIRED FOR `filter-phyly`. This flag will remove all unresolved polyphyletic taxa in each marker tree after completion of the filtering pipeline."
     )
     parser.add_argument(
         "-q",
         "--quartets",
         action="store",
         required=False,
-        help="ONLY REQUIRED FOR `quartet-repr`, A four column tab-separated text files that has the tip labels for each quartet in a column."
+        help=
+        "ONLY REQUIRED FOR `quartet-repr`, A four column tab-separated text files that has the tip labels for each quartet in a column."
     )
     parser.add_argument(
         "-j",
@@ -1067,7 +1112,8 @@ if __name__ == "__main__":
         action="store",
         required=False,
         default="monophyletic_groups.json",
-        help="ONLY REQUIRED FOR `quartet-monophyly` or `quartet-repr`: Path to the input (`quartet-repr`) or output (`quartet-monophyly`) json file of monophyletic groupings of different quartet groups."
+        help=
+        "ONLY REQUIRED FOR `quartet-monophyly` or `quartet-repr`: Path to the input (`quartet-repr`) or output (`quartet-monophyly`) json file of monophyletic groupings of different quartet groups."
     )
     parser.add_argument(
         "--suffix",
