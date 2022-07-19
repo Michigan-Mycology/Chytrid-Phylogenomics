@@ -20,6 +20,7 @@ import logging
 sys.path.append(
     os.path.join(os.environ.get('CHYTRID_PHYLO'), "scripts", "python"))
 import gtlib
+import ete3
 
 
 def write_monophyly_matrix(all_trees, outpath) -> None:
@@ -920,89 +921,91 @@ def sisterhood_heatmap(all_tip_nodes, topologies):
     df.to_csv("topology_heatmatp.tsv", sep="\t")
 
 
-def quartet_repr(all_trees, quartets_path, json_path):
+def fill_group_ancestral_nodes(marker: str, genetree: ete3.Tree, group_tips: dict) -> dict:
+    logger = logging.getLogger(f"{marker}:fill_group_ancestral_nodes")
+    quartet_group_nodes = {}
+    for group_id, clades in group_tips.items():
+        if clades is not None:
+
+            # Sort clades by size, just in case there are more than 1 and we
+            # have to pick the largest one
+            clades.sort(key=lambda c: len(c), reverse=True)
+            clade_sizes = [len(x) for x in clades]
+
+            # Get the leaf names from the largest list of tips (i.e., clade)
+            # We don't know if there is more than 1 list of tips yet, but it doesn't matter
+            # because we're going to take the largest clade anyways.
+            # Unless we skip because there are >1 clades of max size.
+            leaves = [
+                x for x in genetree.get_leaves()
+                if x.isolate in clades[0]
+            ]
+            assert len(leaves) > 0, "0-length list of leaves"
+
+            # A clade goes through here if its tips ARE monophyletic.
+            # This means that it has exactly 1 list of tips in `clades` list
+            # variable.
+            if len(clades) == 1:
+
+                if len(leaves) > 1:
+                    quartet_group_nodes[qNode(int(group_id))] = genetree.get_common_ancestor(
+                        leaves)
+                else:
+                    quartet_group_nodes[qNode(int(group_id))] = leaves[0]
+
+            # A clade goes through here if its tips ARE NOT monophyletic.
+            # This means that it has >1 list of tips in `clades` list variable.
+            elif len(clades) > 1:
+
+                logger.info(f"Group {group_id} is NOT monophyletic in gene tree `{marker}`. It is spread across {len(clades)} clades.")
+
+                # This group is split over atleast 2 clades with the same, biggest size
+                # We have not decided what to do with this yet, so skip it...
+                if clade_sizes.count(max(clade_sizes)) > 1:
+                    logger.warning(
+                        f"More than one clade for non-monophyletic group {group_id} in gene tree `{marker}` is of maximum size. Skipping... "
+                    )
+
+                # This group is split over atleast 2 clades, but there is one single largest
+                # Move forward with that one
+                else:
+                    logger.info(f"Taking largest clade {clades[0]} from list {clades}")
+
+                    quartet_group_nodes[qNode(int(group_id))] = genetree.get_common_ancestor(
+                        leaves)
+
+            else:
+                raise ValueError(f"Length of `clades` variable is 0: {clades}")
+    return quartet_group_nodes
+
+
+def quartet_repr(all_trees, json_path):
     all_trees.midpoint_root()
     with open(json_path, 'r') as openfile:
         per_marker_quartet_group_monophyletic_clades = json.load(openfile)
 
     topologies = {}
-    all_tip_nodes = []
+
+    # There has to be an easier way to do this, but for now...
+    # Get all possible group ids for making the heatmap later
+    all_tip_nodes = [
+        list(v.keys()) for _k, v in per_marker_quartet_group_monophyletic_clades.items() if len(v.keys()) == max([len(v.keys()) for _k, v in per_marker_quartet_group_monophyletic_clades.items()])][0]
 
     for marker, qg in per_marker_quartet_group_monophyletic_clades.items():
         sister_pair = None
-        # quartet_group_nodes = {0: None, 1: None, 2: None}
-        quartet_group_nodes = {}
+
         gt = all_trees.trees[marker]
-        for i, clades in qg.items():
-            if clades is not None:
-                if len(clades) == 1:
-                    leaves = [
-                        x for x in gt.get_leaves() if x.isolate in clades[0]
-                    ]
+        quartet_group_nodes = fill_group_ancestral_nodes(marker=marker,
+                                                         genetree=gt, group_tips=qg)
 
-                    assert all([
-                        x.is_leaf() for x in leaves
-                    ]), "You got nonleaves mixed in with your leaves"
-                    assert len(leaves) > 0, "0-length list of leaves"
-                    # print(gt)
-                    # print(leaves)
-                    # print(marker, i, [x.isolate for x in leaves])
-
-                    if len(leaves) > 1:
-                        quartet_group_nodes[int(i)] = gt.get_common_ancestor(
-                            leaves)
-                    else:
-                        quartet_group_nodes[int(i)] = leaves[0]
-                else:
-
-                    clades.sort(key=lambda c: len(c), reverse=True)
-                    clade_sizes = [len(x) for x in clades]
-                    if clade_sizes.count(max(clade_sizes)) > 1:
-                        print(
-                            f"MULTIMAX ({max(clade_sizes)}): {marker}: {clades}"
-                        )
-                    else:
-                        print(f"Taking largest clade from list: {clades}")
-                        leaves = [
-                            x for x in gt.get_leaves()
-                            if x.isolate in clades[0]
-                        ]
-                        assert all([
-                            x.is_leaf() for x in leaves
-                        ]), "You got nonleaves mixed in with your leaves"
-                        assert len(leaves) > 0, "0-length list of leaves"
-                        # print(gt)
-                        # print(leaves)
-                        # print(marker, i, [x.isolate for x in leaves])
-                        quartet_group_nodes[int(i)] = gt.get_common_ancestor(
-                            leaves)
-
-                    print("Non-monophyletic clades", marker, len(clades),
-                          clades)
-        quartet_group_nodes = {
-            qNode(k): v
-            for k, v in quartet_group_nodes.items()
-        }
-
-        for qn, node in quartet_group_nodes.items():
-            if str(qn) not in [str(x) for x in all_tip_nodes]:
-                all_tip_nodes.append(qn)
-
-        # all_possible = get_all_possible_sisters (quartet_group_nodes)
-        # print(len(all_possible))
-        # for i in all_possible:
-        #    print(i)
-        # sys.exit()
         if len(quartet_group_nodes.keys()) == 1:
             print("CRITICAL: There is only one group present.")
-        print(marker, len(gt.get_leaves()))
-        next_qgn = copy.deepcopy(quartet_group_nodes)
 
         while True:
-            res = get_quartet_topology_first(next_qgn)
+            res = get_quartet_topology_first(quartet_group_nodes)
             if res is None:
                 while True:
-                    res2 = get_quartet_topology_second(next_qgn)
+                    res2 = get_quartet_topology_second(quartet_group_nodes)
                     if res2 is None:
                         if sister_pair is not None:
                             print(
@@ -1010,18 +1013,16 @@ def quartet_repr(all_trees, quartets_path, json_path):
                             )
                         break
                     else:
-                        sister_pair, next_qgn = res2
-                        if len(next_qgn) == 1:
+                        sister_pair, quartet_group_nodes = res2
+                        if len(quartet_group_nodes) == 1:
                             print(marker, "Newick:", sister_pair)
                             break
                 break
             else:
-                sister_pair, next_qgn = res
-                if len(next_qgn) == 1:
+                sister_pair, quartet_group_nodes = res
+                if len(quartet_group_nodes) == 1:
                     print(marker, "Newick:", sister_pair)
                     break
-                else:
-                    print("Unable to form any relationships in the tree.")
 
         topologies[marker] = sister_pair
 
@@ -1045,8 +1046,9 @@ def quartet_repr(all_trees, quartets_path, json_path):
     for topo, count in topology_counts.items():
         print(topo, count)
 
-    for marker, topo in marker2topology.items():
-        print(f"{marker}\t{topo}")
+    with open(f"marker2topo.tsv", 'w') as mark2topo:
+        for marker, topo in marker2topology.items():
+            mark2topo.write(f"{marker}\t{topo}\n")
 
     sys.exit()
     sisterhood_heatmap(all_tip_nodes, topologies)
@@ -1057,6 +1059,10 @@ def quartet_repr(all_trees, quartets_path, json_path):
 
 
 if __name__ == "__main__":
+
+    import logging
+
+    logging.basicConfig(level=logging.INFO)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("task")
@@ -1165,7 +1171,7 @@ if __name__ == "__main__":
         taxon_occupancy(all_trees, args.isolates, args.outpath)
 
     elif args.task == "quartet-repr":
-        quartet_repr(all_trees, args.quartets, args.json)
+        quartet_repr(all_trees, args.json)
 
     elif args.task == "print-nice-quartet-monophyly":
         print_nice_quartet_monophyly(args.json)
