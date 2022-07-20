@@ -14,6 +14,7 @@ import itertools
 import copy
 import json
 import logging
+import numpy as np
 
 # os.environ["CHYTRID_PHYLO_PY"] =
 # "/home/aimzez/work/Chytrid-Phylogenomics/scripts/python"
@@ -874,7 +875,7 @@ def get_all_possible_topologies(all_tip_nodes):
     return possible_topologies
 
 
-def sisterhood_heatmap(all_tip_nodes, topologies):
+def sisterhood_heatmap(all_tip_nodes, topologies, heatmap_outpath):
     all_possible_sisters = [
         x for x in get_all_possible_topologies(all_tip_nodes)
         if len(x.tips_included()) < len(all_tip_nodes)
@@ -886,7 +887,7 @@ def sisterhood_heatmap(all_tip_nodes, topologies):
     row_col_map = {}
     for pt in all_possible_sisters:
         row_col_map[pt] = str(pt)
-        ldict.append({str(t): 0 for t in all_possible_sisters})
+        ldict.append({str(t): np.nan for t in all_possible_sisters})
         index.append(str(pt))
 
     df = pd.DataFrame(ldict, index=index)
@@ -903,7 +904,7 @@ def sisterhood_heatmap(all_tip_nodes, topologies):
                 row = None
                 col = None
                 for t, s in row_col_map.items():
-                    print(sub)
+
                     if sub.tips[0].is_synonymous_with(t):
                         col = s
                     if sub.tips[1].is_synonymous_with(t):
@@ -911,14 +912,29 @@ def sisterhood_heatmap(all_tip_nodes, topologies):
 
                     if row is not None and col is not None:
                         break
-                print(type(row), type(col))
+
+                assert not any([x in sub.tips[1].tips_included() for x in sub.tips[0].tips_included(
+                )]) or any([x in sub.tips[0].tips_included() for x in sub.tips[1].tips_included()]), "Topologies have duplicated tips."
+
+                if np.isnan(df.loc[row, col]) and np.isnan(df.loc[col, row]):
+                    df.loc[row, col] = 1
+                else:
+                    if np.isnan(df.loc[row, col]) and not np.isnan(df.loc[col, row]):
+                        df.loc[col, row] += 1
+                    elif np.isnan(df.loc[col, row]) and not np.isnan(df.loc[row, col]):
+                        df.loc[row, col] += 1
+                    else:
+                        raise ValueError(
+                            "When trying to make the heatmap: both df.loc[row,col] and df.loc[col,row] are not NaN. This should not have happened.")
+                """
                 if df.loc[row, col] == 0 and df.loc[col, row] != 0:
                     df.loc[col, row] += 1
                 else:
                     df.loc[row, col] += 1
+                """
                 # print(pt, "|", sub.tips[0], row, type(row), df.index[
                 #     row], "|", sub.tips[1], col, type(col), df.columns[col])
-    df.to_csv("topology_heatmatp.tsv", sep="\t")
+    df.to_csv(heatmap_outpath, sep="\t")
 
 
 def fill_group_ancestral_nodes(marker: str, genetree: ete3.Tree, group_tips: dict) -> dict:
@@ -979,7 +995,8 @@ def fill_group_ancestral_nodes(marker: str, genetree: ete3.Tree, group_tips: dic
     return quartet_group_nodes
 
 
-def quartet_repr(all_trees, json_path):
+def quartet_repr(all_trees, json_path, outpath, outputbase):
+    logger = logging.getLogger("quartet_repr")
     all_trees.midpoint_root()
     with open(json_path, 'r') as openfile:
         per_marker_quartet_group_monophyletic_clades = json.load(openfile)
@@ -990,6 +1007,8 @@ def quartet_repr(all_trees, json_path):
     # Get all possible group ids for making the heatmap later
     all_tip_nodes = [
         list(v.keys()) for _k, v in per_marker_quartet_group_monophyletic_clades.items() if len(v.keys()) == max([len(v.keys()) for _k, v in per_marker_quartet_group_monophyletic_clades.items()])][0]
+    print(all_tip_nodes)
+    all_tip_nodes = [qNode(int(x)) for x in all_tip_nodes]
 
     for marker, qg in per_marker_quartet_group_monophyletic_clades.items():
         sister_pair = None
@@ -1028,6 +1047,11 @@ def quartet_repr(all_trees, json_path):
 
     topology_counts = {}
     marker2topology = {}
+
+    topology_counts_outpath = os.path.join(outpath, f"{outputbase}_topology_counts.tsv")
+    marker2topology_outpath = os.path.join(outpath, f"{outputbase}_marker2topology.tsv")
+    heatmap_outpath = os.path.join(outpath, f"{outputbase}_topology_heatmap.tsv")
+
     for marker, topo in topologies.items():
         if topo is None:
             marker2topology[marker] = None
@@ -1046,12 +1070,18 @@ def quartet_repr(all_trees, json_path):
     for topo, count in topology_counts.items():
         print(topo, count)
 
-    with open(f"marker2topo.tsv", 'w') as mark2topo:
+    logger.info(f"Writing topology counts to: {topology_counts_outpath}")
+    with open(topology_counts_outpath, 'w') as topocounts:
+        for topo, count in topology_counts.items():
+            topocounts.write(f"{topo}\t{count}\n")
+
+    logger.info(f"Writing marker topologies to: {marker2topology_outpath}")
+    with open(marker2topology_outpath, 'w') as mark2topo:
         for marker, topo in marker2topology.items():
             mark2topo.write(f"{marker}\t{topo}\n")
 
-    sys.exit()
-    sisterhood_heatmap(all_tip_nodes, topologies)
+    logger.info(f"Writing sisterhood heatmap to: {marker2topology_outpath}")
+    sisterhood_heatmap(all_tip_nodes, topologies, heatmap_outpath)
     #    print("--------")
 
     # for k, v in qr.items():
@@ -1081,8 +1111,15 @@ if __name__ == "__main__":
     parser.add_argument("-o",
                         "--outpath",
                         action="store",
-                        required=True,
+                        required=False,
+                        default=".",
                         help="Path to where output files will be written.")
+    parser.add_argument("-b",
+                        "--outputbase",
+                        action="store",
+                        required=False,
+                        default="gtfilter",
+                        help="SO FAR ONLY USED BY `quartet-repr`. Base name for writing output files.")
     parser.add_argument(
         "-m",
         "--phylymat",
@@ -1116,7 +1153,7 @@ if __name__ == "__main__":
         action="store",
         required=False,
         default="monophyletic_groups.json",
-        help="ONLY REQUIRED FOR `quartet-monophyly` or `quartet-repr`: Path to the input (`quartet-repr`) or output (`quartet-monophyly`) json file of monophyletic groupings of different quartet groups."
+        help="ONLY REQUIRED FOR `quartet-monophyly` or `quartet-group-monophyly`: Path to the input (`quartet-repr`) or output (`quartet-monophyly`) json file of monophyletic groupings of different quartet groups."
     )
     parser.add_argument(
         "--suffix",
@@ -1171,7 +1208,7 @@ if __name__ == "__main__":
         taxon_occupancy(all_trees, args.isolates, args.outpath)
 
     elif args.task == "quartet-repr":
-        quartet_repr(all_trees, args.json)
+        quartet_repr(all_trees, args.json, args.outpath, args.outputbase)
 
     elif args.task == "print-nice-quartet-monophyly":
         print_nice_quartet_monophyly(args.json)
